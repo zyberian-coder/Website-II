@@ -1,0 +1,56 @@
+Build a professional corporate website for an IT services company called “Zyberian”, registered in London.  
+
+Branding:
+- Primary color: British Racing Green (#004225).  
+- Style: Modern, minimal, and corporate.  
+- Typography: Clean sans-serif fonts.  
+
+Structure:
+1. Hero Section:
+   - Headline: “Ship faster. Scale smarter. Win bigger.”
+   - Subtext: “Zyberian designs, builds, and runs resilient software systems that fuel growth — from idea to enterprise scale.”
+   - Buttons: [Book a Strategy Call] (primary, green) and [See Case Studies] (secondary, outlined).  
+
+2. Stats Section:
+   - Showcase 4 stats:  
+     • 99.95% Uptime across managed estates  
+     • 2x Faster average time-to-market  
+     • $10M+ Business value shipped  
+     • 72 NPS – clients love working with us  
+
+3. Services / Capabilities:
+   - Grid with cards (hover effects, icons):  
+     • Web & Mobile  
+     • Product Engineering  
+     • Cloud & DevOps  
+     • Data & AI  
+     • Systems Integration  
+     • Cyber Security  
+     • SRE & Managed Ops  
+
+4. Client Outcomes / Testimonials:
+   - 3 testimonial cards with client quotes.  
+
+5. Process Section:
+   - Title: “How We Work”  
+   - Tagline: “Strategy → Delivery → Reliability”  
+   - Short text on transparent, predictable, accountable execution.  
+
+6. Careers Page (important):  
+   - List job vacancies with “Apply” button.  
+   - Ability to add/remove jobs easily.  
+
+7. Contact Section:
+   - Form fields: Name, Email, Company, Project Type, Budget, Timeline, Message, File Upload.  
+   - Send form submissions to: hr@zyberian.com  
+
+8. Footer:
+   - Left: Zyberian logo + short tagline: “Full-stack IT partner. We build, scale, and run modern software systems.”  
+   - Middle: Company links (Services, Work, Process, Blog, Careers).  
+   - Right: Contact info (Email: hr@zyberian.com | Phone: +44 7471622999 | Location: London).  
+   - Social icons: LinkedIn, Twitter.  
+
+Other Requirements:
+- Mobile responsive design.  
+- Clean animations (fade-in, hover effects).  
+- Deploy-ready.  
