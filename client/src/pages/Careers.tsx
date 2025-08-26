@@ -274,7 +274,7 @@ export default function Careers() {
           {/* Job Listings */}
           <div className="grid gap-6 max-w-5xl mx-auto">
             {jobs?.filter(job => job.isActive).map((job) => (
-              <Card key={job.id} className="hover:shadow-lg transition-all duration-300 animate-on-scroll shadow-sm border-gray-100">
+              <Card key={job.id} className="hover:shadow-lg transition-all duration-300 shadow-sm border-gray-100">
                 <CardContent className="p-8">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex-1">
