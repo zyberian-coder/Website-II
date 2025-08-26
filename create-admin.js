@@ -13,6 +13,37 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function createAdmin() {
   try {
+    // Create session table for PostgreSQL session store
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid" varchar NOT NULL COLLATE "default",
+        "sess" json NOT NULL,
+        "expire" timestamp(6) NOT NULL
+      )
+      WITH (OIDS=FALSE);
+    `);
+    
+    await pool.query(`
+      ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+    `);
+    
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+    `);
+    
+    console.log('✅ Session table created successfully!');
+    
+    // Create users table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+        username text NOT NULL UNIQUE,
+        password text NOT NULL
+      );
+    `);
+    
+    console.log('✅ Users table created successfully!');
+    
     // Hash the password
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
@@ -32,7 +63,7 @@ async function createAdmin() {
       console.log('ℹ️ Admin user already exists');
     }
   } catch (error) {
-    console.error('❌ Error creating admin user:', error.message);
+    console.error('❌ Error:', error.message);
   } finally {
     await pool.end();
   }
