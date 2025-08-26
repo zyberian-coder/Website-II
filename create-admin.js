@@ -1,9 +1,13 @@
-import { Pool } from '@neondatabase/serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import bcrypt from 'bcrypt';
 import { config } from 'dotenv';
+import ws from 'ws';
 
 // Load environment variables
 config();
+
+// Configure WebSocket for Neon
+neonConfig.webSocketConstructor = ws;
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
