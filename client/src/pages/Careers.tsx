@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,10 +40,7 @@ export default function Careers() {
   });
 
   const createJobMutation = useMutation({
-    mutationFn: (job: InsertJob) => apiRequest('/api/jobs', {
-      method: 'POST',
-      body: JSON.stringify(job),
-    }),
+    mutationFn: (job: InsertJob) => apiRequest('POST', '/api/jobs', job),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       toast({ title: "Success", description: "Job posted successfully!" });
@@ -56,9 +53,7 @@ export default function Careers() {
   });
 
   const deleteJobMutation = useMutation({
-    mutationFn: (jobId: string) => apiRequest(`/api/jobs/${jobId}`, {
-      method: 'DELETE',
-    }),
+    mutationFn: (jobId: string) => apiRequest('DELETE', `/api/jobs/${jobId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       toast({ title: "Success", description: "Job posting removed" });
@@ -162,6 +157,9 @@ export default function Careers() {
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle>Create New Job Posting</DialogTitle>
+                    <DialogDescription>
+                      Fill out the form below to create a new job posting that will appear on the careers page.
+                    </DialogDescription>
                   </DialogHeader>
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -325,7 +323,7 @@ export default function Careers() {
               </Card>
             ))}
             
-            {jobs?.filter(job => job.isActive).length === 0 && !isLoading && (
+            {jobs && jobs.filter(job => job.isActive).length === 0 && !isLoading && (
               <Card className="shadow-sm border-gray-100">
                 <CardContent className="p-12 text-center">
                   <h3 className="text-xl font-medium text-gray-600 mb-4">No Open Positions</h3>
@@ -341,7 +339,7 @@ export default function Careers() {
               </Card>
             )}
 
-            {jobs?.filter(job => job.isActive).length > 0 && (
+            {jobs && jobs.filter(job => job.isActive).length > 0 && (
               <div className="text-center mt-12 animate-on-scroll">
                 <Card className="shadow-sm border-gray-100 bg-gray-50">
                   <CardContent className="p-8">
