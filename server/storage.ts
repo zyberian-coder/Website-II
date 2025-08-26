@@ -91,7 +91,12 @@ export class MemStorage implements IStorage {
 
   async createJob(insertJob: InsertJob): Promise<Job> {
     const id = randomUUID();
-    const job: Job = { ...insertJob, id, createdAt: new Date() };
+    const job: Job = { 
+      ...insertJob, 
+      id, 
+      isActive: insertJob.isActive ?? true,
+      createdAt: new Date() 
+    };
     this.jobs.set(id, job);
     return job;
   }
