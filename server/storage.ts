@@ -1,4 +1,7 @@
 import { type User, type InsertUser, type Job, type InsertJob, type ContactSubmission, type InsertContactSubmission } from "@shared/schema";
+import { users, jobs, contactSubmissions } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -14,131 +17,78 @@ export interface IStorage {
   getContactSubmissions(): Promise<ContactSubmission[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private jobs: Map<string, Job>;
-  private contactSubmissions: Map<string, ContactSubmission>;
-
-  constructor() {
-    this.users = new Map();
-    this.jobs = new Map();
-    this.contactSubmissions = new Map();
-    this.seedJobs();
-  }
-
-  private seedJobs() {
-    const defaultJobs: InsertJob[] = [
-      {
-        title: "Senior Full-Stack Developer",
-        location: "London, UK",
-        type: "Full-time",
-        experience: "5+ years experience",
-        description: "Join our engineering team to build scalable web applications using React, Node.js, and cloud technologies. Lead technical decisions and mentor junior developers.",
-        isActive: true,
-      },
-      {
-        title: "DevOps Engineer",
-        location: "London, UK", 
-        type: "Full-time",
-        experience: "3+ years experience",
-        description: "Design and maintain CI/CD pipelines, manage cloud infrastructure, and ensure high availability of production systems. AWS and Kubernetes experience required.",
-        isActive: true,
-      },
-      {
-        title: "UX/UI Designer",
-        location: "London, UK",
-        type: "Full-time", 
-        experience: "4+ years experience",
-        description: "Create beautiful, user-centered designs for web and mobile applications. Work closely with product and engineering teams to deliver exceptional user experiences.",
-        isActive: true,
-      },
-    ];
-
-    defaultJobs.forEach(job => {
-      const id = randomUUID();
-      this.jobs.set(id, { 
-        ...job, 
-        id, 
-        isActive: job.isActive ?? true,
-        createdAt: new Date() 
-      });
-    });
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async getJobs(): Promise<Job[]> {
-    return Array.from(this.jobs.values()).sort(
-      (a, b) => b.createdAt!.getTime() - a.createdAt!.getTime()
-    );
+    return await db.select().from(jobs).orderBy(jobs.createdAt);
   }
 
   async getActiveJobs(): Promise<Job[]> {
-    return Array.from(this.jobs.values())
-      .filter(job => job.isActive)
-      .sort((a, b) => b.createdAt!.getTime() - a.createdAt!.getTime());
+    return await db.select()
+      .from(jobs)
+      .where(eq(jobs.isActive, true))
+      .orderBy(jobs.createdAt);
   }
 
   async createJob(insertJob: InsertJob): Promise<Job> {
-    const id = randomUUID();
-    const job: Job = { 
-      ...insertJob, 
-      id, 
-      isActive: insertJob.isActive ?? true,
-      createdAt: new Date() 
-    };
-    this.jobs.set(id, job);
+    const [job] = await db
+      .insert(jobs)
+      .values({
+        ...insertJob,
+        isActive: insertJob.isActive ?? true,
+      })
+      .returning();
     return job;
   }
 
   async updateJob(id: string, updates: Partial<InsertJob>): Promise<Job | undefined> {
-    const existing = this.jobs.get(id);
-    if (!existing) return undefined;
-    
-    const updated = { ...existing, ...updates };
-    this.jobs.set(id, updated);
-    return updated;
+    const [job] = await db
+      .update(jobs)
+      .set(updates)
+      .where(eq(jobs.id, id))
+      .returning();
+    return job || undefined;
   }
 
   async deleteJob(id: string): Promise<boolean> {
-    return this.jobs.delete(id);
+    const result = await db.delete(jobs).where(eq(jobs.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async createContactSubmission(insertSubmission: InsertContactSubmission): Promise<ContactSubmission> {
-    const id = randomUUID();
-    const submission: ContactSubmission = { 
-      ...insertSubmission, 
-      id, 
-      createdAt: new Date(),
-      company: insertSubmission.company ?? null,
-      projectType: insertSubmission.projectType ?? null,
-      budget: insertSubmission.budget ?? null,
-      timeline: insertSubmission.timeline ?? null,
-    };
-    this.contactSubmissions.set(id, submission);
+    const [submission] = await db
+      .insert(contactSubmissions)
+      .values({
+        ...insertSubmission,
+        company: insertSubmission.company ?? null,
+        projectType: insertSubmission.projectType ?? null,
+        budget: insertSubmission.budget ?? null,
+        timeline: insertSubmission.timeline ?? null,
+      })
+      .returning();
     return submission;
   }
 
   async getContactSubmissions(): Promise<ContactSubmission[]> {
-    return Array.from(this.contactSubmissions.values()).sort(
-      (a, b) => b.createdAt!.getTime() - a.createdAt!.getTime()
-    );
+    return await db.select().from(contactSubmissions).orderBy(contactSubmissions.createdAt);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

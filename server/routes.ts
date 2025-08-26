@@ -1,11 +1,78 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertJobSchema, insertContactSubmissionSchema } from "@shared/schema";
+import { insertJobSchema, insertContactSubmissionSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import bcrypt from "bcrypt";
+
+// Extend session type
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;
+    isAdmin?: boolean;
+  }
+}
+
+// Authentication middleware
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId || !req.session.isAdmin) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  next();
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get all active jobs
+  // Authentication routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        res.status(400).json({ error: "Username and password required" });
+        return;
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        res.status(401).json({ error: "Invalid credentials" });
+        return;
+      }
+
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        res.status(401).json({ error: "Invalid credentials" });
+        return;
+      }
+
+      req.session.userId = user.id;
+      req.session.isAdmin = true;
+
+      res.json({ success: true, user: { id: user.id, username: user.username } });
+    } catch (error) {
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        res.status(500).json({ error: "Logout failed" });
+        return;
+      }
+      res.json({ success: true });
+    });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    if (req.session.userId) {
+      res.json({ isAuthenticated: true, isAdmin: req.session.isAdmin });
+    } else {
+      res.json({ isAuthenticated: false, isAdmin: false });
+    }
+  });
+
+  // Get all active jobs (public endpoint)
   app.get("/api/jobs", async (req, res) => {
     try {
       const jobs = await storage.getActiveJobs();
@@ -15,8 +82,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to get all jobs (including inactive)
+  app.get("/api/admin/jobs", requireAuth, async (req, res) => {
+    try {
+      const jobs = await storage.getJobs();
+      res.json(jobs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch jobs" });
+    }
+  });
+
   // Create new job (admin endpoint)
-  app.post("/api/jobs", async (req, res) => {
+  app.post("/api/admin/jobs", requireAuth, async (req, res) => {
     try {
       const jobData = insertJobSchema.parse(req.body);
       const job = await storage.createJob(jobData);
@@ -31,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update job (admin endpoint)
-  app.put("/api/jobs/:id", async (req, res) => {
+  app.put("/api/admin/jobs/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = insertJobSchema.partial().parse(req.body);
@@ -53,7 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete job (admin endpoint)
-  app.delete("/api/jobs/:id", async (req, res) => {
+  app.delete("/api/admin/jobs/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteJob(id);
@@ -96,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all contact submissions (admin endpoint)
-  app.get("/api/contact", async (req, res) => {
+  app.get("/api/admin/contact", requireAuth, async (req, res) => {
     try {
       const submissions = await storage.getContactSubmissions();
       res.json(submissions);
