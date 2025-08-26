@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Eye, EyeOff } from "lucide-react";
@@ -23,6 +23,7 @@ export default function AdminLogin() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -39,6 +40,8 @@ export default function AdminLogin() {
     },
     onSuccess: (data) => {
       if (data.success) {
+        // Invalidate auth status query to refresh authentication state
+        queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
         toast({ 
           title: "Success", 
           description: "Logged in successfully!" 
