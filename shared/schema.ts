@@ -40,6 +40,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertJobSchema = createInsertSchema(jobs).omit({
   id: true,
   createdAt: true,
+}).extend({
+  isActive: z.boolean().default(true).optional(),
 });
 
 export const insertContactSubmissionSchema = createInsertSchema(contactSubmissions).omit({

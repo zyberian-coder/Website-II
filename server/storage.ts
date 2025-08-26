@@ -56,7 +56,12 @@ export class MemStorage implements IStorage {
 
     defaultJobs.forEach(job => {
       const id = randomUUID();
-      this.jobs.set(id, { ...job, id, createdAt: new Date() });
+      this.jobs.set(id, { 
+        ...job, 
+        id, 
+        isActive: job.isActive ?? true,
+        createdAt: new Date() 
+      });
     });
   }
 
@@ -116,7 +121,15 @@ export class MemStorage implements IStorage {
 
   async createContactSubmission(insertSubmission: InsertContactSubmission): Promise<ContactSubmission> {
     const id = randomUUID();
-    const submission: ContactSubmission = { ...insertSubmission, id, createdAt: new Date() };
+    const submission: ContactSubmission = { 
+      ...insertSubmission, 
+      id, 
+      createdAt: new Date(),
+      company: insertSubmission.company ?? null,
+      projectType: insertSubmission.projectType ?? null,
+      budget: insertSubmission.budget ?? null,
+      timeline: insertSubmission.timeline ?? null,
+    };
     this.contactSubmissions.set(id, submission);
     return submission;
   }
