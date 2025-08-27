@@ -78,6 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jobs = await storage.getActiveJobs();
       res.json(jobs);
     } catch (error) {
+      console.error("Error fetching jobs:", error);
       res.status(500).json({ error: "Failed to fetch jobs" });
     }
   });
@@ -88,6 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jobs = await storage.getJobs();
       res.json(jobs);
     } catch (error) {
+      console.error("Error fetching admin jobs:", error);
       res.status(500).json({ error: "Failed to fetch jobs" });
     }
   });
