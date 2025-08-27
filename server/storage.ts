@@ -52,6 +52,7 @@ export class DatabaseStorage implements IStorage {
       .insert(jobs)
       .values({
         ...insertJob,
+        skills: insertJob.skills || [],
         isActive: insertJob.isActive ?? true,
       })
       .returning();

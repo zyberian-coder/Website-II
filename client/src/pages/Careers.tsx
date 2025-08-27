@@ -139,17 +139,17 @@ export default function Careers() {
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          <div className="flex items-center justify-between">
+                          <div className="space-y-3">
                             <div className="flex items-center text-gray-600">
-                              <Briefcase className="w-4 h-4 mr-1" />
+                              <Briefcase className="w-4 h-4 mr-2" />
                               <span className="text-sm" data-testid={`text-job-type-${job.id}`}>
                                 {job.type}
                               </span>
                             </div>
                             <div className="flex items-center text-gray-600">
-                              <Clock className="w-4 h-4 mr-1" />
-                              <span className="text-sm font-medium">Years of Experience:</span>
-                              <span className="text-sm ml-1" data-testid={`text-job-experience-${job.id}`}>
+                              <Clock className="w-4 h-4 mr-2" />
+                              <span className="text-sm">Experience: </span>
+                              <span className="text-sm font-medium" data-testid={`text-job-experience-${job.id}`}>
                                 {job.experience}
                               </span>
                             </div>
