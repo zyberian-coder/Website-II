@@ -4,13 +4,17 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Clock, Briefcase, Mail, Phone } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Clock, Briefcase, Mail, Phone, Code, ChevronDown, ChevronUp } from "lucide-react";
 import type { Job } from "@shared/schema";
+import { useState } from "react";
 
 export default function Careers() {
   const { data: jobs, isLoading } = useQuery<Job[]>({
     queryKey: ['/api/jobs'],
   });
+  
+  const [expandedJobs, setExpandedJobs] = useState<Set<string>>(new Set());
 
   const handleApply = (jobTitle: string) => {
     // Open email client with pre-filled subject
@@ -21,6 +25,52 @@ export default function Careers() {
   const handleGeneralApplication = () => {
     const mailtoLink = `mailto:hr@zyberian.com?subject=General Application&body=Dear Hiring Team,%0A%0AI am writing to express my general interest in joining Zyberian...`;
     window.open(mailtoLink, '_blank');
+  };
+
+  const toggleJobExpansion = (jobId: string) => {
+    const newExpanded = new Set(expandedJobs);
+    if (newExpanded.has(jobId)) {
+      newExpanded.delete(jobId);
+    } else {
+      newExpanded.add(jobId);
+    }
+    setExpandedJobs(newExpanded);
+  };
+
+  const formatSkills = (skills: string[] | null, jobId: string) => {
+    if (!skills || skills.length === 0) return null;
+    
+    const maxDisplay = 4;
+    const displaySkills = skills.slice(0, maxDisplay);
+    const remainingCount = skills.length - maxDisplay;
+    
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center text-gray-600">
+          <Code className="w-4 h-4 mr-1" />
+          <span className="text-sm font-medium">Skills Required</span>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {displaySkills.map((skill, index) => (
+            <Badge 
+              key={index} 
+              variant="secondary" 
+              className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200"
+            >
+              {skill}
+            </Badge>
+          ))}
+          {remainingCount > 0 && (
+            <Badge 
+              variant="secondary" 
+              className="text-xs bg-british-green/10 text-british-green hover:bg-british-green/20"
+            >
+              +{remainingCount} more
+            </Badge>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -69,49 +119,83 @@ export default function Careers() {
                 </div>
               ) : jobs && jobs.length > 0 ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {jobs.map((job) => (
-                    <Card key={job.id} className="hover:shadow-lg transition-shadow duration-200" data-testid={`card-job-${job.id}`}>
-                      <CardHeader>
-                        <CardTitle className="text-british-green" data-testid={`text-job-title-${job.id}`}>
-                          {job.title}
-                        </CardTitle>
-                        <div className="flex items-center text-gray-600 space-x-4">
-                          <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            <span className="text-sm" data-testid={`text-job-location-${job.id}`}>
-                              {job.location}
-                            </span>
+                  {jobs.map((job) => {
+                    const isExpanded = expandedJobs.has(job.id);
+                    const shouldShowReadMore = job.description.length > 150;
+                    
+                    return (
+                      <Card key={job.id} className="hover:shadow-lg transition-shadow duration-200" data-testid={`card-job-${job.id}`}>
+                        <CardHeader>
+                          <CardTitle className="text-british-green" data-testid={`text-job-title-${job.id}`}>
+                            {job.title}
+                          </CardTitle>
+                          <div className="flex items-center text-gray-600 space-x-4">
+                            <div className="flex items-center">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              <span className="text-sm" data-testid={`text-job-location-${job.id}`}>
+                                {job.location}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center text-gray-600">
-                            <Briefcase className="w-4 h-4 mr-1" />
-                            <span className="text-sm" data-testid={`text-job-type-${job.id}`}>
-                              {job.type}
-                            </span>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center text-gray-600">
+                              <Briefcase className="w-4 h-4 mr-1" />
+                              <span className="text-sm" data-testid={`text-job-type-${job.id}`}>
+                                {job.type}
+                              </span>
+                            </div>
+                            <div className="flex items-center text-gray-600">
+                              <Clock className="w-4 h-4 mr-1" />
+                              <span className="text-sm font-medium">Years of Experience:</span>
+                              <span className="text-sm ml-1" data-testid={`text-job-experience-${job.id}`}>
+                                {job.experience}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center text-gray-600">
-                            <Clock className="w-4 h-4 mr-1" />
-                            <span className="text-sm" data-testid={`text-job-experience-${job.id}`}>
-                              {job.experience}
-                            </span>
+                          
+                          {formatSkills(job.skills, job.id)}
+                          
+                          <div className="space-y-2">
+                            <div className="text-gray-700 text-sm" data-testid={`text-job-description-${job.id}`}>
+                              {isExpanded || !shouldShowReadMore 
+                                ? job.description 
+                                : `${job.description.substring(0, 150)}...`
+                              }
+                            </div>
+                            {shouldShowReadMore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleJobExpansion(job.id)}
+                                className="p-0 h-auto font-medium text-british-green hover:text-british-green-light hover:bg-transparent"
+                                data-testid={`button-toggle-description-${job.id}`}
+                              >
+                                {isExpanded ? (
+                                  <>
+                                    Show Less <ChevronUp className="w-4 h-4 ml-1" />
+                                  </>
+                                ) : (
+                                  <>
+                                    Read More <ChevronDown className="w-4 h-4 ml-1" />
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
-                        </div>
-                        <p className="text-gray-700 text-sm line-clamp-3" data-testid={`text-job-description-${job.id}`}>
-                          {job.description}
-                        </p>
-                        <Button 
-                          onClick={() => handleApply(job.title)} 
-                          className="w-full mt-4 bg-british-green text-white hover:bg-british-green-light"
-                          data-testid={`button-apply-${job.id}`}
-                        >
-                          Apply Now
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          
+                          <Button 
+                            onClick={() => handleApply(job.title)} 
+                            className="w-full mt-4 bg-british-green text-white hover:bg-british-green-light"
+                            data-testid={`button-apply-${job.id}`}
+                          >
+                            Apply Now
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12">

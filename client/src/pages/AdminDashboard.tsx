@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, LogOut, Users, Briefcase } from "lucide-react";
+import { Plus, Edit, Trash2, LogOut, Users, Briefcase, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [isAddJobOpen, setIsAddJobOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [skillInput, setSkillInput] = useState("");
   
   // Check authentication
   const { data: authStatus, isLoading: authLoading } = useQuery<AuthStatus>({
@@ -53,6 +54,7 @@ export default function AdminDashboard() {
       type: '',
       experience: '',
       description: '',
+      skills: [],
       isActive: true,
     },
   });
@@ -125,13 +127,37 @@ export default function AdminDashboard() {
       type: job.type,
       experience: job.experience,
       description: job.description,
+      skills: job.skills || [],
       isActive: job.isActive,
     });
   };
 
   const handleCancelEdit = () => {
     setEditingJob(null);
+    setSkillInput("");
     form.reset();
+  };
+
+  const addSkill = () => {
+    if (!skillInput.trim()) return;
+    
+    const currentSkills = form.getValues('skills') || [];
+    if (!currentSkills.includes(skillInput.trim())) {
+      form.setValue('skills', [...currentSkills, skillInput.trim()]);
+    }
+    setSkillInput("");
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    const currentSkills = form.getValues('skills') || [];
+    form.setValue('skills', currentSkills.filter(skill => skill !== skillToRemove));
+  };
+
+  const handleSkillInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addSkill();
+    }
   };
 
   if (authLoading) {
@@ -336,6 +362,61 @@ export default function AdminDashboard() {
                           </FormItem>
                         )}
                       />
+                      
+                      <FormField
+                        control={form.control}
+                        name="skills"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Skills Required</FormLabel>
+                            <div className="space-y-3">
+                              <div className="flex gap-2">
+                                <Input
+                                  value={skillInput}
+                                  onChange={(e) => setSkillInput(e.target.value)}
+                                  onKeyDown={handleSkillInputKeyDown}
+                                  placeholder="Type a skill and press Enter"
+                                  data-testid="input-skill"
+                                />
+                                <Button
+                                  type="button"
+                                  onClick={addSkill}
+                                  variant="outline"
+                                  size="sm"
+                                  data-testid="button-add-skill"
+                                >
+                                  Add
+                                </Button>
+                              </div>
+                              {(field.value && field.value.length > 0) && (
+                                <div className="flex flex-wrap gap-2">
+                                  {field.value.map((skill, index) => (
+                                    <Badge
+                                      key={index}
+                                      variant="secondary"
+                                      className="flex items-center gap-1 px-2 py-1"
+                                    >
+                                      {skill}
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-4 w-4 p-0 hover:bg-red-100"
+                                        onClick={() => removeSkill(skill)}
+                                        data-testid={`button-remove-skill-${index}`}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
                       <FormField
                         control={form.control}
                         name="isActive"

@@ -16,6 +16,7 @@ export const jobs = pgTable("jobs", {
   type: text("type").notNull(),
   experience: text("experience").notNull(),
   description: text("description").notNull(),
+  skills: text("skills").array().default(sql`'{}'::text[]`),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -42,6 +43,7 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   createdAt: true,
 }).extend({
   isActive: z.boolean().default(true).optional(),
+  skills: z.array(z.string()).default([]).optional(),
 });
 
 export const insertContactSubmissionSchema = createInsertSchema(contactSubmissions).omit({
