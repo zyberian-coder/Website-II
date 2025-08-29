@@ -50,7 +50,8 @@ export default function Footer() {
               </li>
               <li className="flex items-center text-green-100 text-sm" data-testid="footer-location">
                 <MapPin className="w-4 h-4 mr-2" />
-                London
+                ZYBERIAN LTD
+124-128 City Road, London, England, EC1V 2NX
               </li>
             </ul>
           </div>

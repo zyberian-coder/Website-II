@@ -10,7 +10,16 @@ export default function Navigation() {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <Link href="/" data-testid="link-home">
-                <h1 className="text-2xl font-bold text-british-green">Zyberian</h1>
+                <div className="flex items-center gap-3">
+                  {/* Logo as image for flexibility */}
+                  <img
+                    src="data:image/svg+xml,%3Csvg width='108' height='108' viewBox='0 0 108 108' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='12' y='12' width='84' height='84' rx='28' fill='%23125639'/%3E%3Cpath d='M36 72L72 36H44L36 44H64L36 72Z' fill='%23A7F3D0'/%3E%3C/svg%3E"
+                    alt="Zyberian logo"
+                    className="h-16 w-16"
+                    loading="eager"
+                  />
+                  <h1 className="text-2xl font-bold text-british-green">Zyberian</h1>
+                </div>
               </Link>
             </div>
           </div>

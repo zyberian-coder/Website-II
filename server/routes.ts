@@ -23,6 +23,30 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Admin credentials change route
+  app.post("/api/admin/change-credentials", requireAuth, async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (!username || !password) {
+        res.status(400).json({ error: "Username and password required" });
+        return;
+      }
+      // Only allow changing own credentials
+      const userId = req.session.userId;
+      if (typeof userId !== "string") {
+        res.status(401).json({ error: "Invalid session user" });
+        return;
+      }
+      const user = await storage.updateAdminCredentials(userId, username, password);
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      res.json({ success: true, user: { id: user.id, username: user.username } });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update credentials" });
+    }
+  });
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {

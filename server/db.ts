@@ -1,4 +1,6 @@
 import { Pool } from 'pg';
+import dotenv from 'dotenv';
+dotenv.config();
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
@@ -8,8 +10,9 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+
 // Use standard PostgreSQL driver for local/standard databases
-export const pool = new Pool({ 
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: false
 });

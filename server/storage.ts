@@ -1,8 +1,10 @@
+  // ...existing code...
 import { type User, type InsertUser, type Job, type InsertJob, type ContactSubmission, type InsertContactSubmission } from "@shared/schema";
 import { users, jobs, contactSubmissions } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -18,6 +20,15 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  async updateAdminCredentials(id: string, username: string, password: string): Promise<User | undefined> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const [user] = await db
+      .update(users)
+      .set({ username, password: hashedPassword })
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
@@ -39,6 +50,8 @@ export class DatabaseStorage implements IStorage {
   async getJobs(): Promise<Job[]> {
     return await db.select().from(jobs).orderBy(jobs.createdAt);
   }
+
+  // ...existing code...
 
   async getActiveJobs(): Promise<Job[]> {
     return await db.select()

@@ -23,6 +23,25 @@ interface AuthStatus {
 }
 
 export default function AdminDashboard() {
+  // State for credentials change dialog
+  const [isChangeCredsOpen, setIsChangeCredsOpen] = useState(false);
+  const credsForm = useForm<{ username: string; password: string }>({
+    defaultValues: { username: '', password: '' },
+  });
+
+  const changeCredsMutation = useMutation({
+    mutationFn: async (data: { username: string; password: string }) => {
+      return apiRequest('POST', '/api/admin/change-credentials', data);
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Credentials updated!' });
+      setIsChangeCredsOpen(false);
+      credsForm.reset();
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to update credentials', variant: 'destructive' });
+    },
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -177,15 +196,53 @@ export default function AdminDashboard() {
             <div className="flex items-center">
               <h1 className="text-xl font-semibold text-gray-900">Zyberian Admin Dashboard</h1>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              data-testid="button-logout"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsChangeCredsOpen(true)}
+                data-testid="button-change-creds"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Change Credentials
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                data-testid="button-logout"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+      {/* Change Credentials Modal */}
+      <Dialog open={isChangeCredsOpen} onOpenChange={setIsChangeCredsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Admin Credentials</DialogTitle>
+            <DialogDescription>Update your username and password securely.</DialogDescription>
+          </DialogHeader>
+          <Form {...credsForm}>
+            <form onSubmit={credsForm.handleSubmit((data) => changeCredsMutation.mutate(data))} className="space-y-4">
+              <FormField name="username" control={credsForm.control} render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Username</FormLabel>
+                  <FormControl><Input {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField name="password" control={credsForm.control} render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Password</FormLabel>
+                  <FormControl><Input type="password" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <Button type="submit" disabled={changeCredsMutation.isLoading}>Update</Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
           </div>
         </div>
       </div>

@@ -98,7 +98,8 @@ export default function Contact() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Location</h4>
-                  <p className="text-gray-600">London, United Kingdom</p>
+                  <p className="text-gray-600">ZYBERIAN LTD
+124-128 City Road, London, England, EC1V 2NX</p>
                 </div>
               </div>
             </div>
