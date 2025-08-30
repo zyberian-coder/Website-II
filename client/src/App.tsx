@@ -9,6 +9,7 @@ import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminSubmissions from "@/pages/AdminSubmissions";
 import NotFound from "@/pages/not-found";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 function Router() {
   return (
@@ -16,8 +17,16 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/careers" component={Careers} />
       <Route path="/admin/login" component={AdminLogin} />
-      <Route path="/admin/submissions" component={AdminSubmissions} />
-      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/submissions">
+        <ProtectedRoute>
+          <AdminSubmissions />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/admin">
+        <ProtectedRoute>
+          <AdminDashboard />
+        </ProtectedRoute>
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -24,6 +24,24 @@ export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const queryClient = useQueryClient();
+
+  // Check if user is already authenticated
+  const { data: authData, isLoading: isCheckingAuth } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/auth/me");
+      return response.json();
+    },
+    retry: false,
+    staleTime: 0,
+  });
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!isCheckingAuth && authData?.isAuthenticated && authData?.isAdmin) {
+      setLocation("/admin");
+    }
+  }, [authData, isCheckingAuth, setLocation]);
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -61,6 +79,23 @@ export default function AdminLogin() {
   const onSubmit = (data: LoginForm) => {
     loginMutation.mutate(data);
   };
+
+  // Show loading while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Checking authentication...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render login form if already authenticated
+  if (authData?.isAuthenticated && authData?.isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">

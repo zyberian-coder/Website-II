@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -59,6 +58,7 @@ import {
   LogOut,
   KeyRound,
   Eye,
+  Loader2,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
   >(null);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
 
-  // Queries
+  // Fetch data (authentication is handled by ProtectedRoute)
   const { data: jobs, isLoading: isLoadingJobs } = useQuery<Job[]>({
     queryKey: ["/api/admin/jobs"],
   });
@@ -136,9 +136,13 @@ export default function AdminDashboard() {
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/logout"),
     onSuccess: () => {
+      // Clear auth cache
+      queryClient.setQueryData(["/api/auth/me"], null);
       setLocation("/admin/login");
     },
   });
+
+
 
   const changeCredsMutation = useMutation({
     mutationFn: (data: z.infer<typeof credsSchema>) =>
