@@ -61,28 +61,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
-// Auth check utility
-function useAuthRedirect() {
-  const [, setLocation] = useLocation();
-  const { data, isLoading } = useQuery({
-    queryKey: ["/api/auth/me"],
-    retry: false,
-    // If unauthorized, fetch will throw, so catch and return null
-    queryFn: async () => {
-      try {
-        const res = await fetch("/api/auth/me", { credentials: "include" });
-        if (!res.ok) throw new Error("Not authenticated");
-        return await res.json();
-      } catch {
-        return null;
-      }
-    },
-  });
-  useEffect(() => {
-    if (!isLoading && !data) setLocation("/admin/login");
-  }, [isLoading, data, setLocation]);
-  return { isLoading, isAuthenticated: !!data };
-}
 
 const credsSchema = insertUserSchema.pick({
   username: true,
@@ -90,8 +68,6 @@ const credsSchema = insertUserSchema.pick({
 });
 
 export default function AdminDashboard() {
-  // All hooks must be called before any conditional return
-  const { isLoading, isAuthenticated } = useAuthRedirect();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [isAddJobOpen, setIsAddJobOpen] = useState(false);
@@ -102,14 +78,7 @@ export default function AdminDashboard() {
   >(null);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
 
-<<<<<<< HEAD
   // Fetch data (authentication is handled by ProtectedRoute)
-=======
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Checking authentication...</div>;
-  if (!isAuthenticated) return null;
-
-  // Queries
->>>>>>> c540fc21f1f83b6f4f02ad7c7104fbd71ab0ad3b
   const { data: jobs, isLoading: isLoadingJobs } = useQuery<Job[]>({
     queryKey: ["/api/admin/jobs"],
   });
