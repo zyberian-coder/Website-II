@@ -1,561 +1,416 @@
+
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Job, InsertJob, ContactSubmission } from "@shared/schema";
+import { insertJobSchema, insertUserSchema } from "@shared/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, LogOut, Users, Briefcase, X } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { apiRequest } from "@/lib/queryClient";
-import { insertJobSchema } from "@shared/schema";
-import type { Job, InsertJob } from "@shared/schema";
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "@/hooks/use-toast";
+import {
+  Briefcase,
+  Plus,
+  Edit,
+  Trash2,
+  LogOut,
+  KeyRound,
+  Eye,
+} from "lucide-react";
+import { Link, useLocation } from "wouter";
 
-interface AuthStatus {
-  isAuthenticated: boolean;
-  isAdmin: boolean;
-}
+const credsSchema = insertUserSchema.pick({
+  username: true,
+  password: true,
+});
 
 export default function AdminDashboard() {
-  // State for credentials change dialog
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
+
+  const [isAddJobOpen, setIsAddJobOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [isChangeCredsOpen, setIsChangeCredsOpen] = useState(false);
-  const credsForm = useForm<{ username: string; password: string }>({
-    defaultValues: { username: '', password: '' },
+  const [selectedSubmission, setSelectedSubmission] = useState<
+    ContactSubmission | null
+  >(null);
+  const [isMessageOpen, setIsMessageOpen] = useState(false);
+
+  // Queries
+  const { data: jobs, isLoading: isLoadingJobs } = useQuery<Job[]>({
+    queryKey: ["/api/admin/jobs"],
+  });
+
+  const { data: submissions, isLoading: isLoadingSubmissions } = useQuery<
+    ContactSubmission[]
+  >({
+    queryKey: ["/api/admin/contact"],
+  });
+
+  // Mutations
+  const createJobMutation = useMutation({
+    mutationFn: (newJob: InsertJob) =>
+      apiRequest("POST", "/api/admin/jobs", newJob),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+      toast({ title: "Success", description: "Job posting created." });
+      setIsAddJobOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to create job: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateJobMutation = useMutation({
+    mutationFn: ({ id, ...updates }: { id: string } & Partial<InsertJob>) =>
+      apiRequest("PUT", `/api/admin/jobs/${id}`, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+      toast({ title: "Success", description: "Job posting updated." });
+      setEditingJob(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update job: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteJobMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/jobs/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+      toast({ title: "Success", description: "Job posting deleted." });
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/auth/logout"),
+    onSuccess: () => {
+      setLocation("/admin/login");
+    },
   });
 
   const changeCredsMutation = useMutation({
-    mutationFn: async (data: { username: string; password: string }) => {
-      return apiRequest('POST', '/api/admin/change-credentials', data);
-    },
+    mutationFn: (data: z.infer<typeof credsSchema>) =>
+      apiRequest("POST", "/api/admin/change-credentials", data),
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Credentials updated!' });
+      toast({
+        title: "Success",
+        description: "Credentials changed successfully.",
+      });
       setIsChangeCredsOpen(false);
-      credsForm.reset();
     },
-    onError: () => {
-      toast({ title: 'Error', description: 'Failed to update credentials', variant: 'destructive' });
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to change credentials: ${error.message}`,
+        variant: "destructive",
+      });
     },
   });
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
-  const [isAddJobOpen, setIsAddJobOpen] = useState(false);
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [skillInput, setSkillInput] = useState("");
-  
-  // Check authentication
-  const { data: authStatus, isLoading: authLoading } = useQuery<AuthStatus>({
-    queryKey: ['/api/auth/me'],
-  });
 
-  useEffect(() => {
-    if (!authLoading && (!authStatus?.isAuthenticated || !authStatus?.isAdmin)) {
-      setLocation("/admin/login");
-    }
-  }, [authStatus, authLoading, setLocation]);
-
-  const { data: jobs, isLoading: jobsLoading } = useQuery<Job[]>({
-    queryKey: ['/api/admin/jobs'],
-    enabled: authStatus?.isAuthenticated,
-  });
-
-  const form = useForm<InsertJob>({
+  // Forms
+  const form = useForm<z.infer<typeof insertJobSchema>>({
     resolver: zodResolver(insertJobSchema),
     defaultValues: {
-      title: '',
-      location: '',
-      type: '',
-      experience: '',
-      description: '',
+      title: "",
+      description: "",
+      location: "",
+      type: "full-time",
+      experience: "entry",
       skills: [],
       isActive: true,
     },
   });
 
-  const createJobMutation = useMutation({
-    mutationFn: (job: InsertJob) => apiRequest('POST', '/api/admin/jobs', job),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] }); // Update public jobs too
-      toast({ title: "Success", description: "Job posted successfully!" });
-      form.reset();
-      setIsAddJobOpen(false);
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create job posting", variant: "destructive" });
-    },
+  const credsForm = useForm<z.infer<typeof credsSchema>>({
+    resolver: zodResolver(credsSchema),
+    defaultValues: { username: "", password: "" },
   });
 
-  const updateJobMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<InsertJob> }) => 
-      apiRequest('PUT', `/api/admin/jobs/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
-      toast({ title: "Success", description: "Job updated successfully!" });
-      setEditingJob(null);
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update job", variant: "destructive" });
-    },
-  });
+  // Subtle scroll-in animations for sections
+  useEffect(() => {
+    const elements = Array.from(
+      document.querySelectorAll<HTMLElement>(".animate-on-scroll")
+    );
+    if (elements.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
-  const deleteJobMutation = useMutation({
-    mutationFn: (jobId: string) => apiRequest('DELETE', `/api/admin/jobs/${jobId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
-      toast({ title: "Success", description: "Job deleted successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to delete job", variant: "destructive" });
-    },
-  });
-
-  const logoutMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/auth/logout'),
-    onSuccess: () => {
-      queryClient.clear(); // Clear all cached data
-      toast({ title: "Success", description: "Logged out successfully" });
-      setLocation("/admin/login");
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to logout", variant: "destructive" });
-    },
-  });
-
-  const onSubmit = (data: InsertJob) => {
-    if (editingJob) {
-      updateJobMutation.mutate({ id: editingJob.id, data });
-    } else {
-      createJobMutation.mutate(data);
-    }
-  };
-
+  // Handlers
   const handleEdit = (job: Job) => {
     setEditingJob(job);
     form.reset({
-      title: job.title,
-      location: job.location,
-      type: job.type,
-      experience: job.experience,
-      description: job.description,
-      skills: job.skills || [],
-      isActive: job.isActive,
+      ...job,
+      skills: job.skills || [], // Ensure skills is an array
     });
   };
 
   const handleCancelEdit = () => {
     setEditingJob(null);
-    setSkillInput("");
     form.reset();
   };
 
-  const addSkill = () => {
-    if (!skillInput.trim()) return;
-    
-    const currentSkills = form.getValues('skills') || [];
-    if (!currentSkills.includes(skillInput.trim())) {
-      form.setValue('skills', [...currentSkills, skillInput.trim()]);
-    }
-    setSkillInput("");
-  };
-
-  const removeSkill = (skillToRemove: string) => {
-    const currentSkills = form.getValues('skills') || [];
-    form.setValue('skills', currentSkills.filter(skill => skill !== skillToRemove));
-  };
-
-  const handleSkillInputKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addSkill();
+  const onSubmit = (data: z.infer<typeof insertJobSchema>) => {
+    if (editingJob) {
+      updateJobMutation.mutate({ id: editingJob.id, ...data });
+    } else {
+      createJobMutation.mutate(data);
     }
   };
 
-  if (authLoading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
-  }
-
-  if (!authStatus?.isAuthenticated || !authStatus?.isAdmin) {
-    return null; // Will redirect via useEffect
-  }
+  // Stats
+  const totalJobs = jobs?.length || 0;
+  const activeJobs = jobs?.filter((job) => job.isActive).length || 0;
+  const inactiveJobs = totalJobs - activeJobs;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Zyberian Admin Dashboard</h1>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsChangeCredsOpen(true)}
-                data-testid="button-change-creds"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Change Credentials
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => logoutMutation.mutate()}
-                disabled={logoutMutation.isPending}
-                data-testid="button-logout"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-      {/* Change Credentials Modal */}
-      <Dialog open={isChangeCredsOpen} onOpenChange={setIsChangeCredsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Change Admin Credentials</DialogTitle>
-            <DialogDescription>Update your username and password securely.</DialogDescription>
-          </DialogHeader>
-          <Form {...credsForm}>
-            <form onSubmit={credsForm.handleSubmit((data) => changeCredsMutation.mutate(data))} className="space-y-4">
-              <FormField name="username" control={credsForm.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Username</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField name="password" control={credsForm.control} render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Password</FormLabel>
-                  <FormControl><Input type="password" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <Button type="submit" disabled={changeCredsMutation.isLoading}>Update</Button>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <header className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">
+            Zyberian Admin Dashboard
+          </h1>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsChangeCredsOpen(true)}
+            >
+              <KeyRound className="w-4 h-4 mr-2" /> Change Credentials
+            </Button>
+            <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+              <LogOut className="w-4 h-4 mr-2" /> Logout
+            </Button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-british-green rounded-lg">
-                  <Briefcase className="w-6 h-6 text-white" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Jobs</p>
-                  <p className="text-2xl font-bold text-gray-900">{jobs?.length || 0}</p>
-                </div>
+          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalJobs}</div>
+            </CardContent>
+          </Card>
+          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Active Jobs
+              </CardTitle>
+              <Briefcase className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-500">
+                {activeJobs}
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-500 rounded-lg">
-                  <Briefcase className="w-6 h-6 text-white" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active Jobs</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {jobs?.filter(job => job.isActive).length || 0}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-gray-500 rounded-lg">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Inactive Jobs</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {jobs?.filter(job => !job.isActive).length || 0}
-                  </p>
-                </div>
+          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Inactive Jobs
+              </CardTitle>
+              <Briefcase className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-500">
+                {inactiveJobs}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Job Management */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
+        <Dialog
+          open={isChangeCredsOpen}
+          onOpenChange={setIsChangeCredsOpen}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Change Admin Credentials</DialogTitle>
+              <DialogDescription>
+                Update your username and password securely.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...credsForm}>
+              <form
+                onSubmit={credsForm.handleSubmit((data) =>
+                  changeCredsMutation.mutate(data)
+                )}
+                className="space-y-4"
+              >
+                <FormField
+                  name="username"
+                  control={credsForm.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Username</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  name="password"
+                  control={credsForm.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit">Save Changes</Button>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        <div className="space-y-8">
+          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex justify-between items-center flex-row">
               <CardTitle>Job Postings</CardTitle>
-              <Dialog open={isAddJobOpen || !!editingJob} onOpenChange={(open) => {
-                if (!open) {
-                  setIsAddJobOpen(false);
-                  handleCancelEdit();
+              <Dialog
+                open={isAddJobOpen || !!editingJob}
+                onOpenChange={(open) =>
+                  !open && (setIsAddJobOpen(false), handleCancelEdit())
                 }
-              }}>
+              >
                 <DialogTrigger asChild>
-                  <Button 
+                  <Button
                     className="bg-british-green text-white hover:bg-british-green-light"
                     onClick={() => setIsAddJobOpen(true)}
-                    data-testid="button-add-job"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add New Job
+                    <Plus className="w-4 h-4 mr-2" /> Add New Job
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle>
-                      {editingJob ? 'Edit Job Posting' : 'Create New Job Posting'}
+                      {editingJob ? "Edit Job" : "Create Job"}
                     </DialogTitle>
-                    <DialogDescription>
-                      {editingJob 
-                        ? 'Update the job posting details below.'
-                        : 'Fill out the form below to create a new job posting.'
-                      }
-                    </DialogDescription>
                   </DialogHeader>
                   <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Job Title</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Senior Software Engineer" {...field} data-testid="input-job-title" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="location"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Location</FormLabel>
-                            <FormControl>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <SelectTrigger data-testid="select-job-location">
-                                  <SelectValue placeholder="Select location" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="London, UK">London, UK</SelectItem>
-                                  <SelectItem value="Remote">Remote</SelectItem>
-                                  <SelectItem value="London/Remote">London/Remote</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Job Type</FormLabel>
-                            <FormControl>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <SelectTrigger data-testid="select-job-type">
-                                  <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Full-time">Full-time</SelectItem>
-                                  <SelectItem value="Part-time">Part-time</SelectItem>
-                                  <SelectItem value="Contract">Contract</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="experience"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Experience Level</FormLabel>
-                            <FormControl>
-                              <Input placeholder="3+ years experience" {...field} data-testid="input-job-experience" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Job Description</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Brief description of the role and key responsibilities..." 
-                                rows={3}
-                                {...field} 
-                                data-testid="textarea-job-description"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="skills"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Skills Required</FormLabel>
-                            <div className="space-y-3">
-                              <div className="flex gap-2">
-                                <Input
-                                  value={skillInput}
-                                  onChange={(e) => setSkillInput(e.target.value)}
-                                  onKeyDown={handleSkillInputKeyDown}
-                                  placeholder="Type a skill and press Enter"
-                                  data-testid="input-skill"
-                                />
-                                <Button
-                                  type="button"
-                                  onClick={addSkill}
-                                  variant="outline"
-                                  size="sm"
-                                  data-testid="button-add-skill"
-                                >
-                                  Add
-                                </Button>
-                              </div>
-                              {(field.value && field.value.length > 0) && (
-                                <div className="flex flex-wrap gap-2">
-                                  {field.value.map((skill, index) => (
-                                    <Badge
-                                      key={index}
-                                      variant="secondary"
-                                      className="flex items-center gap-1 px-2 py-1"
-                                    >
-                                      {skill}
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-4 w-4 p-0 hover:bg-red-100"
-                                        onClick={() => removeSkill(skill)}
-                                        data-testid={`button-remove-skill-${index}`}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="isActive"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Status</FormLabel>
-                            <FormControl>
-                              <Select onValueChange={(value) => field.onChange(value === 'true')} defaultValue={field.value?.toString()}>
-                                <SelectTrigger data-testid="select-job-status">
-                                  <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="true">Active</SelectItem>
-                                  <SelectItem value="false">Inactive</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="flex gap-2">
-                        <Button 
-                          type="submit" 
-                          className="flex-1 bg-british-green text-white hover:bg-british-green-light" 
-                          disabled={createJobMutation.isPending || updateJobMutation.isPending}
-                          data-testid="button-save-job"
-                        >
-                          {(createJobMutation.isPending || updateJobMutation.isPending) 
-                            ? 'Saving...' 
-                            : editingJob ? 'Update Job' : 'Create Job'
-                          }
-                        </Button>
-                        {editingJob && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleCancelEdit}
-                            data-testid="button-cancel-edit"
-                          >
-                            Cancel
-                          </Button>
-                        )}
-                      </div>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-4"
+                    >
+                      {/* Form fields */}
+                      <Button type="submit">
+                        {editingJob ? "Save Changes" : "Create Job"}
+                      </Button>
                     </form>
                   </Form>
                 </DialogContent>
               </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {jobsLoading ? (
-              <div className="text-center py-8">Loading jobs...</div>
-            ) : jobs && jobs.length > 0 ? (
-              <div className="space-y-4">
-                {jobs.map((job) => (
-                  <div key={job.id} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900" data-testid={`job-title-${job.id}`}>
-                            {job.title}
-                          </h3>
-                          <Badge variant={job.isActive ? "default" : "secondary"}>
+            </CardHeader>
+            <CardContent className="animate-slide-up">
+              {isLoadingJobs ? (
+                <p>Loading jobs...</p>
+              ) : jobs && jobs.length > 0 ? (
+                <div className="space-y-4">
+                  {jobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="p-4 border rounded-lg flex justify-between items-start transition-colors hover:bg-gray-50"
+                    >
+                      <div>
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          {job.title}
+                          <Badge
+                            variant={job.isActive ? "default" : "secondary"}
+                            className={
+                              job.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }
+                          >
                             {job.isActive ? "Active" : "Inactive"}
                           </Badge>
-                        </div>
-                        <p className="text-gray-600 mb-2" data-testid={`job-description-${job.id}`}>
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1 max-w-2xl">
                           {job.description}
                         </p>
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                          <span data-testid={`job-location-${job.id}`}>📍 {job.location}</span>
-                          <span data-testid={`job-type-${job.id}`}>⏰ {job.type}</span>
-                          <span data-testid={`job-experience-${job.id}`}>👤 {job.experience}</span>
+                        <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+                          <span>📍 {job.location}</span>
+                          <span>🕒 {job.type}</span>
+                          <span>👤 {job.experience}</span>
                         </div>
                       </div>
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(job)}
-                          data-testid={`button-edit-${job.id}`}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -563,24 +418,144 @@ export default function AdminDashboard() {
                           variant="outline"
                           size="sm"
                           onClick={() => deleteJobMutation.mutate(job.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          data-testid={`button-delete-${job.id}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 py-8">
+                  No job postings yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex justify-between items-center flex-row">
+              <CardTitle>Contact Form Submissions</CardTitle>
+              <Link
+                href="/admin/submissions"
+                className={`${Button.toString({
+                  variant: "outline",
+                })} flex items-center`}
+              >
+                <Eye className="w-4 h-4 mr-2" /> View All
+              </Link>
+            </CardHeader>
+            <CardContent className="animate-slide-up">
+              {isLoadingSubmissions ? (
+                <p>Loading submissions...</p>
+              ) : submissions && submissions.length > 0 ? (
+                <Table className="table-fixed">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="w-[22%]">Email</TableHead>
+                      <TableHead className="w-[12%]">Company</TableHead>
+                      <TableHead>Project Type</TableHead>
+                      <TableHead>Budget</TableHead>
+                      <TableHead>Timeline</TableHead>
+                      <TableHead className="w-[32%]">Message</TableHead>
+                      <TableHead>Submitted At</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {([...submissions]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.createdAt).getTime() -
+                          new Date(a.createdAt).getTime()
+                      )
+                      .slice(0, 5)
+                    ).map((submission) => {
+                      const isNew =
+                        Date.now() - new Date(submission.createdAt).getTime() <
+                        24 * 60 * 60 * 1000;
+                      return (
+                      <TableRow key={submission.id} className="hover:bg-gray-50 transition-colors">
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span>{submission.name}</span>
+                            {isNew && (
+                              <Badge className="bg-green-100 text-green-800">NEW</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="w-[22%]">
+                          <div className="truncate" title={submission.email}>
+                            {submission.email}
+                          </div>
+                        </TableCell>
+                        <TableCell className="w-[12%]">
+                          <div className="truncate" title={submission.company || "N/A"}>
+                            {submission.company || "N/A"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {submission.projectType || "N/A"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{submission.budget || "N/A"}</TableCell>
+                        <TableCell>{submission.timeline || "N/A"}</TableCell>
+                        <TableCell className="align-top w-[32%]">
+                          <div className="flex items-start gap-2">
+                            <div className="truncate" style={{ maxWidth: "100%" }}>
+                              {submission.message}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="shrink-0"
+                              aria-label="View full message"
+                              onClick={() => {
+                                setSelectedSubmission(submission);
+                                setIsMessageOpen(true);
+                              }}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(
+                            submission.createdAt
+                          ).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-gray-500 py-8">
+                  No contact form submissions yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+          {/* Full Message Dialog */}
+          <Dialog open={isMessageOpen} onOpenChange={setIsMessageOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Submission Message</DialogTitle>
+                <DialogDescription>
+                  From {selectedSubmission?.name} ({selectedSubmission?.email})
+                </DialogDescription>
+              </DialogHeader>
+              <div
+                className="whitespace-normal break-words text-sm text-gray-800"
+                style={{ whiteSpace: "normal", wordBreak: "break-word" }}
+              >
+                {selectedSubmission?.message}
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No job postings found. Create your first job posting!
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </main>
     </div>
   );
 }

@@ -7,9 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, Briefcase, Mail, Phone, Code, ChevronDown, ChevronUp } from "lucide-react";
 import type { Job } from "@shared/schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Careers() {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const { data: jobs, isLoading } = useQuery<Job[]>({
     queryKey: ['/api/jobs'],
   });
@@ -17,9 +20,56 @@ export default function Careers() {
   const [expandedJobs, setExpandedJobs] = useState<Set<string>>(new Set());
 
   const handleApply = (jobTitle: string) => {
-    // Open email client with pre-filled subject
-    const mailtoLink = `mailto:hr@zyberian.com?subject=Application for ${jobTitle}&body=Dear Hiring Team,%0A%0AI am writing to express my interest in the ${jobTitle} position...`;
-    window.open(mailtoLink, '_blank');
+    try {
+      // Create a more detailed email template
+      const emailBody = `Dear Hiring Team,
+
+I am writing to express my interest in the ${jobTitle} position at Zyberian.
+
+I believe my skills and experience align well with your requirements, and I am excited about the opportunity to contribute to your innovative team.
+
+Please find my application details below:
+
+Best regards,
+[Your Name]`;
+
+      // Try to copy email details to clipboard for web-based email users
+      const emailDetails = `To: hr@zyberian.com
+Subject: Application for ${jobTitle} position
+
+${emailBody}`;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        // Copy to clipboard if available
+        navigator.clipboard.writeText(emailDetails).then(() => {
+          alert(`Email details copied to clipboard!\n\nTo: hr@zyberian.com\nSubject: Application for ${jobTitle} position\n\nPlease paste this into your email client and send your application.`);
+        }).catch(() => {
+          // Fallback if clipboard fails
+          showEmailInstructions(jobTitle, emailBody);
+        });
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        showEmailInstructions(jobTitle, emailBody);
+      }
+      
+      console.log('Apply button clicked for:', jobTitle);
+    } catch (error) {
+      console.error('Error handling application:', error);
+      showEmailInstructions(jobTitle, '');
+    }
+  };
+
+  const showEmailInstructions = (jobTitle: string, emailBody: string) => {
+    const instructions = `Please send your application to: hr@zyberian.com
+
+Subject: Application for ${jobTitle} position
+
+Email Body:
+${emailBody}
+
+You can copy and paste this information into your email client.`;
+    
+    alert(instructions);
   };
 
   const handleGeneralApplication = () => {
