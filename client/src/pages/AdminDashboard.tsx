@@ -90,13 +90,10 @@ const credsSchema = insertUserSchema.pick({
 });
 
 export default function AdminDashboard() {
-  // Redirect to login if not authenticated
+  // All hooks must be called before any conditional return
   const { isLoading, isAuthenticated } = useAuthRedirect();
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Checking authentication...</div>;
-  if (!isAuthenticated) return null;
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-
   const [isAddJobOpen, setIsAddJobOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [isChangeCredsOpen, setIsChangeCredsOpen] = useState(false);
@@ -104,6 +101,9 @@ export default function AdminDashboard() {
     ContactSubmission | null
   >(null);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
+
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Checking authentication...</div>;
+  if (!isAuthenticated) return null;
 
   // Queries
   const { data: jobs, isLoading: isLoadingJobs } = useQuery<Job[]>({
