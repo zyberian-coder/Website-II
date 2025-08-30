@@ -61,6 +61,28 @@ import {
   Eye,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+// Auth check utility
+function useAuthRedirect() {
+  const [, setLocation] = useLocation();
+  const { data, isLoading } = useQuery({
+    queryKey: ["/api/auth/me"],
+    retry: false,
+    // If unauthorized, fetch will throw, so catch and return null
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        if (!res.ok) throw new Error("Not authenticated");
+        return await res.json();
+      } catch {
+        return null;
+      }
+    },
+  });
+  useEffect(() => {
+    if (!isLoading && !data) setLocation("/admin/login");
+  }, [isLoading, data, setLocation]);
+  return { isLoading, isAuthenticated: !!data };
+}
 
 const credsSchema = insertUserSchema.pick({
   username: true,
@@ -68,6 +90,10 @@ const credsSchema = insertUserSchema.pick({
 });
 
 export default function AdminDashboard() {
+  // Redirect to login if not authenticated
+  const { isLoading, isAuthenticated } = useAuthRedirect();
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Checking authentication...</div>;
+  if (!isAuthenticated) return null;
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
