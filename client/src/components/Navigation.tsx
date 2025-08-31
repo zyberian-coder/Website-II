@@ -21,7 +21,7 @@ export default function Navigation() {
     { href: "/#services", label: "Services", isLink: true },
     { href: "/#testimonials", label: "Work", isLink: true },
     { href: "/#process", label: "Process", isLink: true },
-    { href: "/blog", label: "Blog", isLink: true },
+    // { href: "/blog", label: "Blog", isLink: true },
     { href: "/careers", label: "Careers", isLink: true },
   ];
 

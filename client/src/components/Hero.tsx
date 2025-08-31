@@ -11,13 +11,13 @@ export default function Hero() {
       const { clientX, clientY } = e;
       const { innerWidth, innerHeight } = window;
       
-      const x = (clientX / innerWidth - 0.5) * 3;
-      const y = (clientY / innerHeight - 0.5) * 3;
+      const x = (clientX / innerWidth - 0.5) * 2;
+      const y = (clientY / innerHeight - 0.5) * 2;
       
       const floatingElements = heroRef.current.querySelectorAll('.floating-element');
       floatingElements.forEach((el, index) => {
         const element = el as HTMLElement;
-        const speed = (index + 1) * 0.08;
+        const speed = (index + 1) * 0.05;
         element.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
       });
     };
@@ -31,7 +31,7 @@ export default function Hero() {
   };
 
   const handleCaseStudies = () => {
-    document.getElementById('testimonials')?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -42,21 +42,21 @@ export default function Hero() {
       {/* Enhanced Background with Image */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Background Image with Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/95 via-white/90 to-white/85" />
+        <div className="absolute inset-0 bg-gradient-to-br from-white/98 via-white/95 to-white/92" />
         
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 pattern-dots opacity-20" />
-        <div className="absolute inset-0 pattern-grid opacity-15" />
+        {/* Subtle Background Pattern - Reduced opacity and better spacing */}
+        <div className="absolute inset-0 pattern-dots opacity-10" />
+        <div className="absolute inset-0 pattern-grid opacity-8" />
         
-        {/* Floating Elements with More Color */}
-        <div className="floating-element absolute top-20 left-10 w-20 h-20 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-full blur-2xl animate-float" style={{ animationDelay: '0s' }} />
-        <div className="floating-element absolute top-40 right-20 w-16 h-16 bg-gradient-to-br from-emerald-400/20 to-teal-500/20 rounded-full blur-xl animate-float" style={{ animationDelay: '2s' }} />
-        <div className="floating-element absolute bottom-32 left-1/4 w-24 h-24 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }} />
-        <div className="floating-element absolute top-1/2 right-1/3 w-12 h-12 bg-gradient-to-br from-rose-400/20 to-pink-500/20 rounded-full blur-lg animate-float" style={{ animationDelay: '6s' }} />
+        {/* Floating Elements - Better positioned and sized to avoid overlap */}
+        <div className="floating-element absolute top-16 left-8 w-16 h-16 bg-gradient-to-br from-blue-400/15 to-purple-500/15 rounded-full blur-xl animate-float" style={{ animationDelay: '0s' }} />
+        <div className="floating-element absolute top-32 right-16 w-12 h-12 bg-gradient-to-br from-emerald-400/12 to-teal-500/12 rounded-full blur-lg animate-float" style={{ animationDelay: '2s' }} />
+        <div className="floating-element absolute bottom-24 left-1/3 w-20 h-20 bg-gradient-to-br from-amber-400/10 to-orange-500/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '4s' }} />
+        <div className="floating-element absolute top-1/2 right-1/4 w-10 h-10 bg-gradient-to-br from-rose-400/8 to-pink-500/8 rounded-full blur-md animate-float" style={{ animationDelay: '6s' }} />
         
-        {/* Additional Colorful Elements */}
-        <div className="floating-element absolute top-1/4 left-1/3 w-16 h-16 bg-gradient-to-br from-indigo-400/15 to-blue-500/15 rounded-full blur-2xl animate-float" style={{ animationDelay: '8s' }} />
-        <div className="floating-element absolute bottom-1/4 right-1/4 w-20 h-20 bg-gradient-to-br from-green-400/15 to-emerald-500/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '10s' }} />
+        {/* Additional Colorful Elements - Positioned to avoid overlap */}
+        <div className="floating-element absolute top-1/3 left-1/4 w-14 h-14 bg-gradient-to-br from-indigo-400/8 to-blue-500/8 rounded-full blur-xl animate-float" style={{ animationDelay: '8s' }} />
+        <div className="floating-element absolute bottom-1/3 right-1/3 w-18 h-18 bg-gradient-to-br from-green-400/6 to-emerald-500/6 rounded-full blur-2xl animate-float" style={{ animationDelay: '10s' }} />
       </div>
 
       {/* Main Content */}
@@ -188,28 +188,19 @@ export default function Hero() {
                     ))}
                   </div>
 
-                  {/* Progress Bar with Color */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-blue-700 font-medium">System Load</span>
-                      <span className="text-neutral-900 font-semibold">78%</span>
-                    </div>
-                    <div className="w-full bg-blue-100 rounded-full h-3 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-british-green via-blue-600 to-emerald-600 rounded-full transition-all duration-1000 ease-out" style={{ width: '78%' }} />
-                    </div>
-                  </div>
+
                 </div>
               </div>
 
-              {/* Floating Icons with More Color */}
-              <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-british-green via-blue-600 to-emerald-600 rounded-3xl flex items-center justify-center animate-float shadow-2xl">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Floating Icons - Positioned to avoid overlap */}
+              <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-british-green via-blue-600 to-emerald-600 rounded-2xl flex items-center justify-center animate-float shadow-xl">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               
-              <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center animate-float shadow-2xl" style={{ animationDelay: '2s' }}>
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center animate-float shadow-xl" style={{ animationDelay: '2s' }}>
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>

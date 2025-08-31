@@ -70,10 +70,10 @@ export default function Footer() {
                 <span className="w-1 h-1 bg-white/40 rounded-full mr-3 group-hover:bg-white transition-all duration-300" />
                 Contact
               </a></li>
-              <li><a href="#" className="text-white/80 hover:text-white transition-colors duration-300 text-body group flex items-center" data-testid="footer-link-blog">
+              {/* <li><a href="#" className="text-white/80 hover:text-white transition-colors duration-300 text-body group flex items-center" data-testid="footer-link-blog">
                 <span className="w-1 h-1 bg-white/40 rounded-full mr-3 group-hover:bg-white transition-all duration-300" />
                 Blog
-              </a></li>
+              </a></li> */}
             </ul>
           </div>
           
