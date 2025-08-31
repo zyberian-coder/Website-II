@@ -153,7 +153,7 @@ export default function Services() {
 
         {/* Bottom CTA */}
         <div className="text-center mt-20 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-          <div className="inline-flex items-center space-x-12 bg-gradient-to-r from-white/90 to-blue-50/90 backdrop-blur-sm rounded-3xl px-10 py-8 border border-blue-200/60 professional-shadow-large shadow-xl">
+          <div className="flex flex-col lg:flex-row items-center justify-center space-y-6 lg:space-y-0 lg:space-x-12 bg-gradient-to-r from-white/90 to-blue-50/90 backdrop-blur-sm rounded-3xl px-6 lg:px-10 py-8 border border-blue-200/60 professional-shadow-large shadow-xl">
             <div className="flex items-center space-x-6">
               <div className="w-16 h-16 bg-gradient-to-r from-british-green via-blue-600 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <Zap className="w-8 h-8 text-white" />
@@ -163,10 +163,10 @@ export default function Services() {
                 <p className="text-body text-blue-700">Let's discuss your project requirements</p>
               </div>
             </div>
-            <div className="w-px h-16 bg-blue-300" />
+            <div className="hidden lg:block w-px h-16 bg-blue-300" />
             <button 
               onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-8 py-4 bg-gradient-to-r from-british-green via-blue-600 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-xl transition-all duration-500 professional-button shadow-lg"
+              className="w-full lg:w-auto px-8 py-4 bg-gradient-to-r from-british-green via-blue-600 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-xl transition-all duration-500 professional-button shadow-lg"
             >
               Get Started
             </button>

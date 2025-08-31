@@ -177,8 +177,8 @@ export default function Navigation() {
       </div>
 
       {/* Mobile Menu */}
-      <div className={`lg:hidden transition-all duration-500 overflow-hidden ${
-        isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+      <div className={`lg:hidden transition-all duration-500 ${
+        isMenuOpen ? 'max-h-screen opacity-100 visible' : 'max-h-0 opacity-0 invisible'
       }`}>
         <div className="bg-white/98 backdrop-blur-2xl border-t border-neutral-200/60 shadow-lg">
           <div className="px-6 py-8 space-y-3">
@@ -199,14 +199,17 @@ export default function Navigation() {
               );
             })}
             
-            <Link 
-              href="/#contact" 
-              className="block bg-gradient-to-r from-british-green to-british-green-light text-white px-8 py-4 rounded-xl font-semibold text-center hover:shadow-xl active:scale-95 transition-all duration-300 text-base mt-6"
-              data-testid="mobile-link-contact"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contact Us
-            </Link>
+            {/* Mobile Contact Us Button - Enhanced visibility */}
+            <div className="pt-4 border-t border-neutral-200/60">
+              <Link 
+                href="/#contact" 
+                className="block bg-gradient-to-r from-british-green to-british-green-light text-white px-8 py-4 rounded-xl font-semibold text-center hover:shadow-xl active:scale-95 transition-all duration-300 text-base shadow-lg"
+                data-testid="mobile-link-contact"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contact Us
+              </Link>
+            </div>
           </div>
         </div>
       </div>

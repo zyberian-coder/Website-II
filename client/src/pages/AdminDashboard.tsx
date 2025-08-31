@@ -471,30 +471,73 @@ export default function AdminDashboard() {
                         />
                       </div>
                       
-                      <FormField
-                        name="skills"
-                        control={form.control}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Required Skills</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="e.g., JavaScript, React, Node.js, Python"
-                                value={Array.isArray(field.value) ? field.value.join(', ') : ''}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  const skills = value.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
-                                  field.onChange(skills);
-                                }}
-                              />
-                            </FormControl>
-                            <div className="text-sm text-gray-500">
-                              Enter skills separated by commas
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                       <FormField
+                         name="skills"
+                         control={form.control}
+                         render={({ field }) => {
+                           const [inputValue, setInputValue] = useState("");
+                           
+                           return (
+                             <FormItem>
+                               <FormLabel>Required Skills</FormLabel>
+                               <FormControl>
+                                 <Input 
+                                   placeholder="Type a skill and press Enter (e.g., JavaScript)"
+                                   value={inputValue}
+                                   onChange={(e) => {
+                                     setInputValue(e.target.value);
+                                   }}
+                                   onKeyDown={(e) => {
+                                     if (e.key === 'Enter') {
+                                       e.preventDefault();
+                                       const value = inputValue.trim();
+                                       if (value && value.length > 0) {
+                                         const currentSkills = Array.isArray(field.value) ? field.value : [];
+                                         // Check if skill already exists
+                                         if (!currentSkills.includes(value)) {
+                                           const newSkills = [...currentSkills, value];
+                                           field.onChange(newSkills);
+                                         }
+                                         // Clear the input
+                                         setInputValue('');
+                                       }
+                                     }
+                                   }}
+                                 />
+                               </FormControl>
+                               <div className="text-sm text-gray-500">
+                                 Type a skill and press Enter to add it
+                               </div>
+                               {/* Skills Preview with Remove Option */}
+                               {Array.isArray(field.value) && field.value.length > 0 && (
+                                 <div className="mt-2 flex flex-wrap gap-2">
+                                   {field.value.map((skill, index) => (
+                                     <span
+                                       key={index}
+                                       className="inline-flex items-center gap-2 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors"
+                                     >
+                                       {skill}
+                                       <button
+                                         type="button"
+                                         onClick={() => {
+                                           const currentSkills = Array.isArray(field.value) ? field.value : [];
+                                           const newSkills = currentSkills.filter((_, i) => i !== index);
+                                           field.onChange(newSkills);
+                                         }}
+                                         className="ml-1 text-blue-600 hover:text-blue-800 font-bold text-sm leading-none"
+                                         title="Remove skill"
+                                       >
+                                         ×
+                                       </button>
+                                     </span>
+                                   ))}
+                                 </div>
+                               )}
+                               <FormMessage />
+                             </FormItem>
+                           );
+                         }}
+                       />
                       
                       <FormField
                         name="isActive"
@@ -636,9 +679,10 @@ export default function AdminDashboard() {
                   <TableBody>
                     {([...submissions]
                       .sort(
-                        (a, b) =>
-                          new Date(b.createdAt).getTime() -
-                          new Date(a.createdAt).getTime()
+                        (a, b) => {
+                          if (!a.createdAt || !b.createdAt) return 0;
+                          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                        }
                       )
                       .slice(0, 5)
                     ).map((submission) => {
