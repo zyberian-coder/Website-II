@@ -37,7 +37,7 @@ export default function Hero() {
   return (
     <section 
       ref={heroRef}
-      className="hero-bg-image relative overflow-hidden min-h-screen flex items-center"
+      className="hero-bg-image relative overflow-hidden min-h-screen flex items-center pt-20"
     >
       {/* Enhanced Background with Image */}
       <div className="absolute inset-0 overflow-hidden">
@@ -65,7 +65,7 @@ export default function Hero() {
           {/* Left Content */}
           <div className="space-y-10 animate-fade-in-up">
             {/* Trust Badge with More Color */}
-            <div className="inline-flex items-center px-5 py-3 bg-gradient-to-r from-white/90 to-blue-50/90 backdrop-blur-sm rounded-full border border-blue-200/60 shadow-lg animate-slide-in-left">
+            <div className="inline-flex items-center px-5 py-3 bg-gradient-to-r from-white/90 to-blue-50/90 backdrop-blur-sm rounded-full border border-blue-200/60 shadow-lg animate-slide-in-left mt-8">
               <div className="w-2.5 h-2.5 bg-gradient-to-r from-british-green to-blue-600 rounded-full mr-3 animate-pulse" />
               <span className="text-sm font-semibold text-blue-800 tracking-wide">Trusted by Fortune 500 Companies</span>
             </div>
@@ -192,18 +192,7 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* Floating Icons - Positioned to avoid overlap */}
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-british-green via-blue-600 to-emerald-600 rounded-2xl flex items-center justify-center animate-float shadow-xl">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
               
-              <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center animate-float shadow-xl" style={{ animationDelay: '2s' }}>
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
             </div>
           </div>
         </div>
