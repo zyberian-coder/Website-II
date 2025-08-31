@@ -141,8 +141,6 @@ export default function AdminDashboard() {
     },
   });
 
-
-
   const changeCredsMutation = useMutation({
     mutationFn: (data: z.infer<typeof credsSchema>) =>
       apiRequest("POST", "/api/admin/change-credentials", data),
@@ -205,8 +203,13 @@ export default function AdminDashboard() {
   const handleEdit = (job: Job) => {
     setEditingJob(job);
     form.reset({
-      ...job,
+      title: job.title,
+      description: job.description,
+      location: job.location,
+      type: job.type,
+      experience: job.experience,
       skills: job.skills || [], // Ensure skills is an array
+      isActive: job.isActive,
     });
   };
 
@@ -230,19 +233,24 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
+      <header className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-xl font-bold text-gray-900">
             Zyberian Admin Dashboard
           </h1>
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
               onClick={() => setIsChangeCredsOpen(true)}
+              className="text-gray-700 border-gray-300 hover:bg-gray-50"
             >
               <KeyRound className="w-4 h-4 mr-2" /> Change Credentials
             </Button>
-            <Button variant="outline" onClick={() => logoutMutation.mutate()}>
+            <Button 
+              variant="outline" 
+              onClick={() => logoutMutation.mutate()}
+              className="text-gray-700 border-gray-300 hover:bg-gray-50"
+            >
               <LogOut className="w-4 h-4 mr-2" /> Logout
             </Button>
           </div>
@@ -251,37 +259,37 @@ export default function AdminDashboard() {
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+          <Card className="animate-on-scroll professional-shadow-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-600">Total Jobs</CardTitle>
+              <Briefcase className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalJobs}</div>
+              <div className="text-2xl font-bold text-gray-900">{totalJobs}</div>
             </CardContent>
           </Card>
-          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+          <Card className="animate-on-scroll professional-shadow-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-medium text-gray-600">
                 Active Jobs
               </CardTitle>
               <Briefcase className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-500">
+              <div className="text-2xl font-bold text-green-600">
                 {activeJobs}
               </div>
             </CardContent>
           </Card>
-          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+          <Card className="animate-on-scroll professional-shadow-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-medium text-gray-600">
                 Inactive Jobs
               </CardTitle>
               <Briefcase className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-500">
+              <div className="text-2xl font-bold text-red-600">
                 {inactiveJobs}
               </div>
             </CardContent>
@@ -332,16 +340,16 @@ export default function AdminDashboard() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit">Save Changes</Button>
+                <Button type="submit" className="w-full bg-british-green hover:bg-british-green-light">Save Changes</Button>
               </form>
             </Form>
           </DialogContent>
         </Dialog>
 
         <div className="space-y-8">
-          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+          <Card className="animate-on-scroll professional-shadow-hover">
             <CardHeader className="flex justify-between items-center flex-row">
-              <CardTitle>Job Postings</CardTitle>
+              <CardTitle className="text-xl font-semibold text-gray-900">Job Postings</CardTitle>
               <Dialog
                 open={isAddJobOpen || !!editingJob}
                 onOpenChange={(open) =>
@@ -356,7 +364,7 @@ export default function AdminDashboard() {
                     <Plus className="w-4 h-4 mr-2" /> Add New Job
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>
                       {editingJob ? "Edit Job" : "Create Job"}
@@ -367,10 +375,163 @@ export default function AdminDashboard() {
                       onSubmit={form.handleSubmit(onSubmit)}
                       className="space-y-4"
                     >
-                      {/* Form fields */}
-                      <Button type="submit">
-                        {editingJob ? "Save Changes" : "Create Job"}
-                      </Button>
+                      <FormField
+                        name="title"
+                        control={form.control}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Job Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., Senior Software Engineer" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        name="description"
+                        control={form.control}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Job Description</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Enter detailed job description..."
+                                className="min-h-[120px]"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        name="location"
+                        control={form.control}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Location</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., London/Remote" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          name="type"
+                          control={form.control}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Job Type</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select job type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="full-time">Full-time</SelectItem>
+                                  <SelectItem value="part-time">Part-time</SelectItem>
+                                  <SelectItem value="contract">Contract</SelectItem>
+                                  <SelectItem value="internship">Internship</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          name="experience"
+                          control={form.control}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Experience Level</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select experience level" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="entry">Entry Level</SelectItem>
+                                  <SelectItem value="mid">Mid Level</SelectItem>
+                                  <SelectItem value="senior">Senior Level</SelectItem>
+                                  <SelectItem value="lead">Lead</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <FormField
+                        name="skills"
+                        control={form.control}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Required Skills</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="e.g., JavaScript, React, Node.js, Python"
+                                value={Array.isArray(field.value) ? field.value.join(', ') : ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const skills = value.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
+                                  field.onChange(skills);
+                                }}
+                              />
+                            </FormControl>
+                            <div className="text-sm text-gray-500">
+                              Enter skills separated by commas
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        name="isActive"
+                        control={form.control}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Active Status</FormLabel>
+                              <div className="text-sm text-gray-500">
+                                Make this job posting visible to candidates
+                              </div>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="flex gap-2 pt-4">
+                        <Button type="submit" className="flex-1 bg-british-green hover:bg-british-green-light">
+                          {editingJob ? "Save Changes" : "Create Job"}
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => {
+                            setIsAddJobOpen(false);
+                            handleCancelEdit();
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </form>
                   </Form>
                 </DialogContent>
@@ -378,16 +539,19 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="animate-slide-up">
               {isLoadingJobs ? (
-                <p>Loading jobs...</p>
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  <span className="ml-2 text-gray-500">Loading jobs...</span>
+                </div>
               ) : jobs && jobs.length > 0 ? (
                 <div className="space-y-4">
                   {jobs.map((job) => (
                     <div
                       key={job.id}
-                      className="p-4 border rounded-lg flex justify-between items-start transition-colors hover:bg-gray-50"
+                      className="p-6 border border-gray-200 rounded-lg flex justify-between items-start transition-colors hover:bg-gray-50"
                     >
-                      <div>
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg flex items-center gap-2 mb-2">
                           {job.title}
                           <Badge
                             variant={job.isActive ? "default" : "secondary"}
@@ -400,20 +564,21 @@ export default function AdminDashboard() {
                             {job.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </h3>
-                        <p className="text-sm text-gray-600 mt-1 max-w-2xl">
+                        <p className="text-gray-600 mb-3 max-w-2xl">
                           {job.description}
                         </p>
-                        <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
                           <span>📍 {job.location}</span>
                           <span>🕒 {job.type}</span>
                           <span>👤 {job.experience}</span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 ml-4">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(job)}
+                          className="text-gray-700 border-gray-300 hover:bg-gray-50"
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -421,36 +586,39 @@ export default function AdminDashboard() {
                           variant="outline"
                           size="sm"
                           onClick={() => deleteJobMutation.mutate(job.id)}
+                          className="text-red-600 border-red-300 hover:bg-red-50"
                         >
-                          <Trash2 className="w-4 h-4 text-red-500" />
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-center text-gray-500 py-8">
-                  No job postings yet.
-                </p>
+                <div className="text-center py-12">
+                  <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No job postings yet.</p>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="animate-on-scroll shadow-sm hover:shadow-md transition-shadow">
+          <Card className="animate-on-scroll professional-shadow-hover">
             <CardHeader className="flex justify-between items-center flex-row">
-              <CardTitle>Contact Form Submissions</CardTitle>
+              <CardTitle className="text-xl font-semibold text-gray-900">Contact Form Submissions</CardTitle>
               <Link
                 href="/admin/submissions"
-                className={`${Button.toString({
-                  variant: "outline",
-                })} flex items-center`}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 h-10 px-4 py-2"
               >
                 <Eye className="w-4 h-4 mr-2" /> View All
               </Link>
             </CardHeader>
             <CardContent className="animate-slide-up">
               {isLoadingSubmissions ? (
-                <p>Loading submissions...</p>
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  <span className="ml-2 text-gray-500">Loading submissions...</span>
+                </div>
               ) : submissions && submissions.length > 0 ? (
                 <Table className="table-fixed">
                   <TableHeader>
@@ -475,13 +643,13 @@ export default function AdminDashboard() {
                       .slice(0, 5)
                     ).map((submission) => {
                       const isNew =
-                        Date.now() - new Date(submission.createdAt).getTime() <
+                        submission.createdAt && Date.now() - new Date(submission.createdAt).getTime() <
                         24 * 60 * 60 * 1000;
                       return (
                       <TableRow key={submission.id} className="hover:bg-gray-50 transition-colors">
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <span>{submission.name}</span>
+                            <span className="font-medium">{submission.name}</span>
                             {isNew && (
                               <Badge className="bg-green-100 text-green-800">NEW</Badge>
                             )}
@@ -498,7 +666,7 @@ export default function AdminDashboard() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">
+                          <Badge variant="secondary" className="bg-gray-100 text-gray-800">
                             {submission.projectType || "N/A"}
                           </Badge>
                         </TableCell>
@@ -512,7 +680,7 @@ export default function AdminDashboard() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="shrink-0"
+                              className="shrink-0 text-gray-600 hover:text-gray-900"
                               aria-label="View full message"
                               onClick={() => {
                                 setSelectedSubmission(submission);
@@ -524,9 +692,7 @@ export default function AdminDashboard() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {new Date(
-                            submission.createdAt
-                          ).toLocaleDateString()}
+                          {submission.createdAt ? new Date(submission.createdAt).toLocaleDateString() : 'N/A'}
                         </TableCell>
                       </TableRow>
                       );
@@ -534,12 +700,16 @@ export default function AdminDashboard() {
                   </TableBody>
                 </Table>
               ) : (
-                <p className="text-center text-gray-500 py-8">
-                  No contact form submissions yet.
-                </p>
+                <div className="text-center py-12">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Eye className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500">No contact form submissions yet.</p>
+                </div>
               )}
             </CardContent>
           </Card>
+          
           {/* Full Message Dialog */}
           <Dialog open={isMessageOpen} onOpenChange={setIsMessageOpen}>
             <DialogContent className="sm:max-w-lg">
@@ -550,7 +720,7 @@ export default function AdminDashboard() {
                 </DialogDescription>
               </DialogHeader>
               <div
-                className="whitespace-normal break-words text-sm text-gray-800"
+                className="whitespace-normal break-words text-sm text-gray-800 bg-gray-50 p-4 rounded-lg"
                 style={{ whiteSpace: "normal", wordBreak: "break-word" }}
               >
                 {selectedSubmission?.message}
