@@ -16,22 +16,11 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                <svg 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  className="w-7 h-7 text-white"
-                >
-                  <path 
-                    d="M5 5 L19 5 L5 19 L19 19" 
-                    stroke="currentColor" 
-                    strokeWidth="2.5" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-3xl font-bold text-white tracking-tight" data-testid="footer-brand">Zyberian</h3>
+              <img 
+                src="/logo.png" 
+                alt="ZYBERIAN Logo" 
+                className="h-16 w-auto object-contain"
+              />
             </div>
             <p className="text-white/80 text-body leading-relaxed mb-8 max-w-lg" data-testid="footer-tagline">
               Full-stack IT partner. We build, scale, and run modern software systems that drive business growth and digital transformation.

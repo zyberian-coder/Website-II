@@ -26,6 +26,12 @@ export default function Navigation() {
   ];
 
   const handleNavigationClick = (href: string) => {
+    // Special handling for home page
+    if (href === "/") {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return true;
+    }
+    
     const id = href.replace('/#', '').replace('#', '');
     const targetElement = document.getElementById(id);
     if (targetElement) {
@@ -46,65 +52,45 @@ export default function Navigation() {
         : 'bg-transparent'
     }`}>
       <div className="container-professional">
-        <div className="flex justify-between items-center h-20">
-          {/* Logo */}
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <Link href="/" data-testid="link-home">
-                <div className="flex items-center gap-4 group">
-                  {/* Professional Logo */}
-                  <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-br from-british-green to-british-green-light rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-500 group-hover:scale-110">
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        className="w-7 h-7 text-white"
-                      >
-                        <path 
-                          d="M5 5 L19 5 L5 19 L19 19" 
-                          stroke="currentColor" 
-                          strokeWidth="2.5" 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  {/* Brand Name */}
-                  <div className="relative">
-                    <h1 className={`text-2xl font-bold tracking-tight group-hover:scale-105 transition-transform duration-500 ${
-                      isScrolled 
-                        ? 'text-neutral-900' 
-                        : 'text-neutral-900'
-                    }`}>
-                      Zyberian
-                    </h1>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </div>
+        <div className="flex justify-between items-center h-28 px-4">
+                     {/* Logo */}
+           <div className="flex items-center">
+             <Link 
+               href="/" 
+               data-testid="link-home" 
+               className="flex items-center group cursor-pointer"
+               onClick={() => {
+                 // Scroll to top of the page when logo is clicked
+                 window.scrollTo({ top: 0, behavior: 'smooth' });
+               }}
+             >
+               <img 
+                 src="/logo.png" 
+                 alt="ZYBERIAN Logo"     
+                 className="h-20 w-auto object-contain group-hover:scale-110 transition-all duration-500"
+               />
+             </Link>
+           </div>
           
           {/* Desktop Navigation */}
           <div className="hidden lg:block">
             <div className="flex items-center space-x-10">
-              {navItems.map((item, index) => {
-                const Component = item.isLink ? Link : 'a';
-                // Only attach handleNavigationClick for in-page anchors
-                const isAnchor = item.href.startsWith('/#') || item.href.startsWith('#');
-                const props = item.isLink
-                  ? isAnchor
-                    ? {
-                        href: item.href,
-                        onClick: (e: any) => {
-                          if (!handleNavigationClick(item.href)) {
-                            e.preventDefault();
-                          }
-                        }
-                      }
-                    : { href: item.href }
-                  : { href: item.href };
+                             {navItems.map((item, index) => {
+                 const Component = item.isLink ? Link : 'a';
+                 // Attach handleNavigationClick for in-page anchors and home page
+                 const isAnchor = item.href.startsWith('/#') || item.href.startsWith('#') || item.href === "/";
+                 const props = item.isLink
+                   ? isAnchor
+                     ? {
+                         href: item.href,
+                         onClick: (e: any) => {
+                           if (!handleNavigationClick(item.href)) {
+                             e.preventDefault();
+                           }
+                         }
+                       }
+                     : { href: item.href }
+                   : { href: item.href };
 
                 return (
                   <Component
