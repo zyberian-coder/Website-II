@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import type { Job, InsertJob, ContactSubmission } from "@shared/schema";
 import { insertJobSchema, insertUserSchema } from "@shared/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,14 +10,12 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -78,7 +76,7 @@ export default function AdminDashboard() {
   >(null);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
 
-  // Fetch data (authentication is handled by ProtectedRoute)
+  // Fetch data
   const { data: jobs, isLoading: isLoadingJobs } = useQuery<Job[]>({
     queryKey: ["/api/admin/jobs"],
   });
@@ -135,7 +133,6 @@ export default function AdminDashboard() {
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/logout"),
     onSuccess: () => {
-      // Clear auth cache
       queryClient.setQueryData(["/api/auth/me"], null);
       setLocation("/admin/login");
     },
@@ -160,6 +157,21 @@ export default function AdminDashboard() {
     },
   });
 
+  const deleteSubmissionMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/contact/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/contact"] });
+      toast({ title: "Success", description: "Submission deleted." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete submission: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Forms
   const form = useForm<z.infer<typeof insertJobSchema>>({
     resolver: zodResolver(insertJobSchema),
@@ -179,26 +191,6 @@ export default function AdminDashboard() {
     defaultValues: { username: "", password: "" },
   });
 
-  // Subtle scroll-in animations for sections
-  useEffect(() => {
-    const elements = Array.from(
-      document.querySelectorAll<HTMLElement>(".animate-on-scroll")
-    );
-    if (elements.length === 0) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-    elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
   // Handlers
   const handleEdit = (job: Job) => {
     setEditingJob(job);
@@ -208,7 +200,7 @@ export default function AdminDashboard() {
       location: job.location,
       type: job.type,
       experience: job.experience,
-      skills: job.skills || [], // Ensure skills is an array
+      skills: job.skills || [],
       isActive: job.isActive,
     });
   };
@@ -226,7 +218,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Stats
   const totalJobs = jobs?.length || 0;
   const activeJobs = jobs?.filter((job) => job.isActive).length || 0;
   const inactiveJobs = totalJobs - activeJobs;
@@ -259,7 +250,7 @@ export default function AdminDashboard() {
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="animate-on-scroll professional-shadow-hover">
+          <Card className="professional-shadow-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">Total Jobs</CardTitle>
               <Briefcase className="h-4 w-4 text-gray-400" />
@@ -268,7 +259,7 @@ export default function AdminDashboard() {
               <div className="text-2xl font-bold text-gray-900">{totalJobs}</div>
             </CardContent>
           </Card>
-          <Card className="animate-on-scroll professional-shadow-hover">
+          <Card className="professional-shadow-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Active Jobs
@@ -281,7 +272,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card className="animate-on-scroll professional-shadow-hover">
+          <Card className="professional-shadow-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Inactive Jobs
@@ -303,9 +294,6 @@ export default function AdminDashboard() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Change Admin Credentials</DialogTitle>
-              <DialogDescription>
-                Update your username and password securely.
-              </DialogDescription>
             </DialogHeader>
             <Form {...credsForm}>
               <form
@@ -347,7 +335,7 @@ export default function AdminDashboard() {
         </Dialog>
 
         <div className="space-y-8">
-          <Card className="animate-on-scroll professional-shadow-hover">
+          <Card className="professional-shadow-hover">
             <CardHeader className="flex justify-between items-center flex-row">
               <CardTitle className="text-xl font-semibold text-gray-900">Job Postings</CardTitle>
               <Dialog
@@ -364,7 +352,7 @@ export default function AdminDashboard() {
                     <Plus className="w-4 h-4 mr-2" /> Add New Job
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-2xl">
+                <DialogContent className="sm:max-w-2xl overflow-y-auto max-h-[90vh]">
                   <DialogHeader>
                     <DialogTitle>
                       {editingJob ? "Edit Job" : "Create Job"}
@@ -493,46 +481,37 @@ export default function AdminDashboard() {
                                        const value = inputValue.trim();
                                        if (value && value.length > 0) {
                                          const currentSkills = Array.isArray(field.value) ? field.value : [];
-                                         // Check if skill already exists
                                          if (!currentSkills.includes(value)) {
                                            const newSkills = [...currentSkills, value];
                                            field.onChange(newSkills);
                                          }
-                                         // Clear the input
                                          setInputValue('');
                                        }
                                      }
                                    }}
                                  />
                                </FormControl>
-                               <div className="text-sm text-gray-500">
-                                 Type a skill and press Enter to add it
-                               </div>
-                               {/* Skills Preview with Remove Option */}
-                               {Array.isArray(field.value) && field.value.length > 0 && (
-                                 <div className="mt-2 flex flex-wrap gap-2">
-                                   {field.value.map((skill, index) => (
-                                     <span
-                                       key={index}
-                                       className="inline-flex items-center gap-2 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition-colors"
+                               <div className="mt-2 flex flex-wrap gap-2">
+                                 {Array.isArray(field.value) && field.value.map((skill, index) => (
+                                   <span
+                                     key={index}
+                                     className="inline-flex items-center gap-2 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-md"
+                                   >
+                                     {skill}
+                                     <button
+                                       type="button"
+                                       onClick={() => {
+                                         const currentSkills = Array.isArray(field.value) ? field.value : [];
+                                         const newSkills = currentSkills.filter((_, i) => i !== index);
+                                         field.onChange(newSkills);
+                                       }}
+                                       className="ml-1 text-blue-600 hover:text-blue-800 font-bold"
                                      >
-                                       {skill}
-                                       <button
-                                         type="button"
-                                         onClick={() => {
-                                           const currentSkills = Array.isArray(field.value) ? field.value : [];
-                                           const newSkills = currentSkills.filter((_, i) => i !== index);
-                                           field.onChange(newSkills);
-                                         }}
-                                         className="ml-1 text-blue-600 hover:text-blue-800 font-bold text-sm leading-none"
-                                         title="Remove skill"
-                                       >
-                                         ×
-                                       </button>
-                                     </span>
-                                   ))}
-                                 </div>
-                               )}
+                                       ×
+                                     </button>
+                                   </span>
+                                 ))}
+                               </div>
                                <FormMessage />
                              </FormItem>
                            );
@@ -580,7 +559,7 @@ export default function AdminDashboard() {
                 </DialogContent>
               </Dialog>
             </CardHeader>
-            <CardContent className="animate-slide-up">
+            <CardContent>
               {isLoadingJobs ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -646,131 +625,77 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="animate-on-scroll professional-shadow-hover">
+          <Card className="professional-shadow-hover">
             <CardHeader className="flex justify-between items-center flex-row">
               <CardTitle className="text-xl font-semibold text-gray-900">Contact Form Submissions</CardTitle>
-              <Link
-                href="/admin/submissions"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 h-10 px-4 py-2"
-              >
-                <Eye className="w-4 h-4 mr-2" /> View All
+               <Link href="/admin/submissions">
+                <Button 
+                  variant="outline"
+                  className="text-gray-700 border-gray-300 hover:bg-gray-50"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  View All
+                </Button>
               </Link>
             </CardHeader>
-            <CardContent className="animate-slide-up">
+            <CardContent>
               {isLoadingSubmissions ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                   <span className="ml-2 text-gray-500">Loading submissions...</span>
                 </div>
               ) : submissions && submissions.length > 0 ? (
-                <Table className="table-fixed">
+                <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead className="w-[22%]">Email</TableHead>
-                      <TableHead className="w-[12%]">Company</TableHead>
-                      <TableHead>Project Type</TableHead>
-                      <TableHead>Budget</TableHead>
-                      <TableHead>Timeline</TableHead>
-                      <TableHead className="w-[32%]">Message</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Message</TableHead>
                       <TableHead>Submitted At</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {([...submissions]
-                      .sort(
-                        (a, b) => {
-                          if (!a.createdAt || !b.createdAt) return 0;
-                          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                        }
-                      )
+                    {[...submissions]
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                       .slice(0, 5)
-                    ).map((submission) => {
-                      const isNew =
-                        submission.createdAt && Date.now() - new Date(submission.createdAt).getTime() <
-                        24 * 60 * 60 * 1000;
-                      return (
-                      <TableRow key={submission.id} className="hover:bg-gray-50 transition-colors">
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{submission.name}</span>
-                            {isNew && (
-                              <Badge className="bg-green-100 text-green-800">NEW</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="w-[22%]">
-                          <div className="truncate" title={submission.email}>
-                            {submission.email}
-                          </div>
-                        </TableCell>
-                        <TableCell className="w-[12%]">
-                          <div className="truncate" title={submission.company || "N/A"}>
-                            {submission.company || "N/A"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-                            {submission.projectType || "N/A"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{submission.budget || "N/A"}</TableCell>
-                        <TableCell>{submission.timeline || "N/A"}</TableCell>
-                        <TableCell className="align-top w-[32%]">
-                          <div className="flex items-start gap-2">
-                            <div className="truncate" style={{ maxWidth: "100%" }}>
-                              {submission.message}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="shrink-0 text-gray-600 hover:text-gray-900"
-                              aria-label="View full message"
-                              onClick={() => {
-                                setSelectedSubmission(submission);
-                                setIsMessageOpen(true);
-                              }}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {submission.createdAt ? new Date(submission.createdAt).toLocaleDateString() : 'N/A'}
-                        </TableCell>
-                      </TableRow>
-                      );
-                    })}
+                      .map((submission) => {
+                        const isNew =
+                          Date.now() - new Date(submission.createdAt).getTime() <
+                          24 * 60 * 60 * 1000;
+                        return (
+                          <TableRow key={submission.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span>{submission.name}</span>
+                                {isNew && (
+                                  <Badge className="bg-green-100 text-green-800">NEW</Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>{submission.email}</TableCell>
+                            <TableCell className="truncate max-w-xs">{submission.message}</TableCell>
+                            <TableCell>{new Date(submission.createdAt).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => deleteSubmissionMutation.mutate(submission.id)}
+                                className="text-red-600 border-red-300 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                   </TableBody>
                 </Table>
               ) : (
-                <div className="text-center py-12">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Eye className="w-6 h-6 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500">No contact form submissions yet.</p>
-                </div>
+                <p>No submissions yet.</p>
               )}
             </CardContent>
           </Card>
-          
-          {/* Full Message Dialog */}
-          <Dialog open={isMessageOpen} onOpenChange={setIsMessageOpen}>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Submission Message</DialogTitle>
-                <DialogDescription>
-                  From {selectedSubmission?.name} ({selectedSubmission?.email})
-                </DialogDescription>
-              </DialogHeader>
-              <div
-                className="whitespace-normal break-words text-sm text-gray-800 bg-gray-50 p-4 rounded-lg"
-                style={{ whiteSpace: "normal", wordBreak: "break-word" }}
-              >
-                {selectedSubmission?.message}
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       </main>
     </div>

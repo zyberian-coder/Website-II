@@ -1,5 +1,4 @@
-
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import type { ContactSubmission } from "@shared/schema";
@@ -8,22 +7,39 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { ArrowLeft, Eye } from "lucide-react";
+import { ArrowLeft, Eye, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 
 export default function AdminSubmissions() {
+  const queryClient = useQueryClient();
   const { data: submissions, isLoading } = useQuery<ContactSubmission[]>({
     queryKey: ['/api/admin/contact'],
   });
   const [selectedSubmission, setSelectedSubmission] = useState<ContactSubmission | null>(null);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
 
+  const deleteSubmissionMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/contact/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/contact'] });
+      toast({ title: "Success", description: "Submission deleted." });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete submission: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-       <Link href="/admin/dashboard" className={`${buttonVariants({ variant: "outline" })} mb-4`}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </Link>
+      <Link href="/admin" className={`${buttonVariants({ variant: "outline" })} mb-4`}>
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Dashboard
+      </Link>
       <Card>
         <CardHeader>
           <CardTitle>Contact Form Submissions</CardTitle>
@@ -43,6 +59,7 @@ export default function AdminSubmissions() {
                   <TableHead>Timeline</TableHead>
                   <TableHead className="w-[32%]">Message</TableHead>
                   <TableHead>Submitted At</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -57,42 +74,52 @@ export default function AdminSubmissions() {
                       Date.now() - new Date(submission.createdAt).getTime() <
                       24 * 60 * 60 * 1000;
                     return (
-                  <TableRow key={submission.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span>{submission.name}</span>
-                        {isNew && (
-                          <Badge className="bg-green-100 text-green-800">NEW</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="w-[22%]"><div className="truncate" title={submission.email}>{submission.email}</div></TableCell>
-                    <TableCell className="w-[12%]"><div className="truncate" title={submission.company || 'N/A'}>{submission.company || 'N/A'}</div></TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{submission.projectType || 'N/A'}</Badge>
-                    </TableCell>
-                    <TableCell>{submission.budget || 'N/A'}</TableCell>
-                    <TableCell>{submission.timeline || 'N/A'}</TableCell>
-                    <TableCell className="align-top w-[32%]">
-                      <div className="flex items-start gap-2">
-                        <div className="truncate" style={{ maxWidth: "100%" }}>
-                          {submission.message}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="shrink-0"
-                          aria-label="View full message"
-                          onClick={() => { setSelectedSubmission(submission); setIsMessageOpen(true); }}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>{new Date(submission.createdAt).toLocaleDateString()}</TableCell>
-                  </TableRow>
-                  );
-                })}
+                      <TableRow key={submission.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span>{submission.name}</span>
+                            {isNew && (
+                              <Badge className="bg-green-100 text-green-800">NEW</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="w-[22%]"><div className="truncate" title={submission.email}>{submission.email}</div></TableCell>
+                        <TableCell className="w-[12%]"><div className="truncate" title={submission.company || 'N/A'}>{submission.company || 'N/A'}</div></TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{submission.projectType || 'N/A'}</Badge>
+                        </TableCell>
+                        <TableCell>{submission.budget || 'N/A'}</TableCell>
+                        <TableCell>{submission.timeline || 'N/A'}</TableCell>
+                        <TableCell className="align-top w-[32%]">
+                          <div className="flex items-start gap-2">
+                            <div className="truncate" style={{ maxWidth: "100%" }}>
+                              {submission.message}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="shrink-0"
+                              aria-label="View full message"
+                              onClick={() => { setSelectedSubmission(submission); setIsMessageOpen(true); }}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>{new Date(submission.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteSubmissionMutation.mutate(submission.id)}
+                            className="text-red-600 border-red-300 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
               </TableBody>
             </Table>
           ) : (

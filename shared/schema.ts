@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -33,6 +33,24 @@ export const contactSubmissions = pgTable("contact_submissions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const jobApplications = pgTable("job_applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  resumeUrl: text("resume_url").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const session = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+}, (table) => ({
+  expireIndex: index("IDX_session_expire").on(table.expire),
+}));
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -51,9 +69,19 @@ export const insertContactSubmissionSchema = createInsertSchema(contactSubmissio
   createdAt: true,
 });
 
+export const insertJobApplicationSchema = createInsertSchema(jobApplications, {
+  phone: z.string().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  resumeUrl: true, // Will be handled by file upload logic
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Job = typeof jobs.$inferSelect;
 export type InsertContactSubmission = z.infer<typeof insertContactSubmissionSchema>;
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
+export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
+export type JobApplication = typeof jobApplications.$inferSelect;

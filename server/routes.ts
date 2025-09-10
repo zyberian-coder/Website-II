@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertJobSchema, insertContactSubmissionSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import { sendContactEmail } from "./email"; // Import the email function
 
 // Extend session type
 declare module 'express-session' {
@@ -31,7 +32,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ error: "Username and password required" });
         return;
       }
-      // Only allow changing own credentials
       const userId = req.session.userId;
       if (typeof userId !== "string") {
         res.status(401).json({ error: "Invalid session user" });
@@ -47,6 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to update credentials" });
     }
   });
+
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -96,29 +97,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all active jobs (public endpoint)
+  // Job routes (public and admin)
   app.get("/api/jobs", async (req, res) => {
     try {
       const jobs = await storage.getActiveJobs();
       res.json(jobs);
     } catch (error) {
-      console.error("Error fetching jobs:", error);
       res.status(500).json({ error: "Failed to fetch jobs" });
     }
   });
 
-  // Admin endpoint to get all jobs (including inactive)
   app.get("/api/admin/jobs", requireAuth, async (req, res) => {
     try {
       const jobs = await storage.getJobs();
       res.json(jobs);
     } catch (error) {
-      console.error("Error fetching admin jobs:", error);
       res.status(500).json({ error: "Failed to fetch jobs" });
     }
   });
 
-  // Create new job (admin endpoint)
   app.post("/api/admin/jobs", requireAuth, async (req, res) => {
     try {
       const jobData = insertJobSchema.parse(req.body);
@@ -133,18 +130,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update job (admin endpoint)
   app.put("/api/admin/jobs/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = insertJobSchema.partial().parse(req.body);
       const job = await storage.updateJob(id, updates);
-      
       if (!job) {
         res.status(404).json({ error: "Job not found" });
         return;
       }
-      
       res.json(job);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -155,56 +149,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete job (admin endpoint)
   app.delete("/api/admin/jobs/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteJob(id);
-      
       if (!deleted) {
         res.status(404).json({ error: "Job not found" });
         return;
       }
-      
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete job" });
     }
   });
 
-  // Submit contact form
+  // Contact form submission
   app.post("/api/contact", async (req, res) => {
     try {
       const submissionData = insertContactSubmissionSchema.parse(req.body);
       const submission = await storage.createContactSubmission(submissionData);
-      
-      // In a real application, you would send an email here
-      console.log("Contact form submission:", {
-        to: "hr@zyberian.com",
-        subject: `New contact form submission from ${submission.name}`,
-        data: submission
-      });
-      
+
+      // Trigger email notification
+      await sendContactEmail(submission);
+
       res.status(201).json({ 
         success: true, 
-        message: "Your message has been sent successfully. We'll get back to you soon!" 
+        message: "Your message has been sent successfully. We\'ll get back to you soon!" 
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Invalid form data", details: error.errors });
       } else {
-        res.status(500).json({ error: "Failed to submit contact form" });
+        // Log the error for debugging, but send a generic response to the client
+        console.error("Error processing contact form:", error);
+        res.status(500).json({ error: "Failed to submit contact form. Please try again later." });
       }
     }
   });
 
-  // Get all contact submissions (admin endpoint)
+  // Get all contact submissions (admin)
   app.get("/api/admin/contact", requireAuth, async (req, res) => {
     try {
       const submissions = await storage.getContactSubmissions();
       res.json(submissions);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch contact submissions" });
+    }
+  });
+
+  app.delete("/api/admin/contact/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteContactSubmission(id);
+      if (!deleted) {
+        res.status(404).json({ error: "Submission not found" });
+        return;
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete submission" });
     }
   });
 

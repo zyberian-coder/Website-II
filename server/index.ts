@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
-dotenv.config();
+// Configure dotenv to load the .env file from the server directory
+dotenv.config({ path: 'server/.env' });
+
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";

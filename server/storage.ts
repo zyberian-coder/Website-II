@@ -17,6 +17,7 @@ export interface IStorage {
   deleteJob(id: string): Promise<boolean>;
   createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission>;
   getContactSubmissions(): Promise<ContactSubmission[]>;
+  deleteContactSubmission(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -102,6 +103,11 @@ export class DatabaseStorage implements IStorage {
 
   async getContactSubmissions(): Promise<ContactSubmission[]> {
     return await db.select().from(contactSubmissions).orderBy(contactSubmissions.createdAt);
+  }
+
+  async deleteContactSubmission(id: string): Promise<boolean> {
+    const result = await db.delete(contactSubmissions).where(eq(contactSubmissions.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
